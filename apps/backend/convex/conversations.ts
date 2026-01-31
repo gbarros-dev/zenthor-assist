@@ -73,3 +73,36 @@ export const get = query({
     return await ctx.db.get(args.id);
   },
 });
+
+export const listRecentWithLastMessage = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const conversations = await ctx.db
+      .query("conversations")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    const results = await Promise.all(
+      conversations.map(async (conv) => {
+        const messages = await ctx.db
+          .query("messages")
+          .withIndex("by_conversationId", (q) => q.eq("conversationId", conv._id))
+          .order("desc")
+          .first();
+
+        return {
+          ...conv,
+          lastMessage: messages
+            ? { content: messages.content, role: messages.role, createdAt: messages._creationTime }
+            : null,
+        };
+      }),
+    );
+
+    return results.sort((a, b) => {
+      const aTime = a.lastMessage?.createdAt ?? a._creationTime;
+      const bTime = b.lastMessage?.createdAt ?? b._creationTime;
+      return bTime - aTime;
+    });
+  },
+});

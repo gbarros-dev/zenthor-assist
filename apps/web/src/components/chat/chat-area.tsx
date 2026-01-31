@@ -32,7 +32,7 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-1 flex-col">
       <ScrollArea className="flex-1 p-4">
         <div className="flex flex-col gap-4">
           {messages?.map((msg) => (

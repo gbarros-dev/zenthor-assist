@@ -4,15 +4,15 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "@gbarros-assistant/backend/convex/_generated/api";
 import type { Id } from "@gbarros-assistant/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { AppSidebar } from "@/components/app-sidebar/app-sidebar";
 import Loader from "@/components/loader";
-import { ZenthorMark } from "@/components/zenthor-logo";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppContext } from "@/hooks/use-app-context";
 
-import { ChatArea } from "./chat-area";
-import { ConversationList } from "./conversation-list";
-
-export function ChatLayout() {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const getOrCreateUser = useMutation(api.users.getOrCreateFromClerk);
   const getOrCreateConversation = useMutation(api.conversations.getOrCreate);
@@ -44,7 +44,7 @@ export function ChatLayout() {
     init();
   }, [user, getOrCreateUser, getOrCreateConversation]);
 
-  if (loading || !userId || !conversationId) {
+  if (loading || !userId) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader />
@@ -53,21 +53,19 @@ export function ChatLayout() {
   }
 
   return (
-    <div className="flex h-full">
-      <aside className="hidden w-64 shrink-0 border-r md:block">
-        <div className="flex items-center gap-2 border-b p-3 text-sm font-medium">
-          <ZenthorMark className="text-primary size-5" />
-          Conversations
-        </div>
-        <ConversationList
-          userId={userId}
-          activeConversationId={conversationId}
-          onSelect={setConversationId}
-        />
-      </aside>
-      <main className="flex-1">
-        <ChatArea conversationId={conversationId} />
-      </main>
-    </div>
+    <AppContext.Provider value={{ userId, conversationId, setConversationId }}>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2 px-4">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+            </div>
+          </header>
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
+    </AppContext.Provider>
   );
 }

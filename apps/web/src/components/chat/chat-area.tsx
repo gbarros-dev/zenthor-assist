@@ -2,10 +2,8 @@
 
 import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import type { Id } from "@zenthor-assist/backend/convex/_generated/dataModel";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useEffect, useRef } from "react";
-
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { MessageBubble } from "./message-bubble";
 import { MessageInput } from "./message-input";
@@ -17,10 +15,13 @@ interface ChatAreaProps {
 export function ChatArea({ conversationId }: ChatAreaProps) {
   const messages = useQuery(api.messages.listByConversation, { conversationId });
   const sendMessage = useMutation(api.messages.send);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async (content: string) => {
@@ -32,15 +33,14 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
   };
 
   return (
-    <div className="flex flex-1 flex-col">
-      <ScrollArea className="flex-1 p-4">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div ref={scrollRef} className="scrollbar-thin flex-1 overflow-y-auto p-4">
         <div className="flex flex-col gap-4">
           {messages?.map((msg) => (
             <MessageBubble key={msg._id} role={msg.role} content={msg.content} />
           ))}
-          <div ref={bottomRef} />
         </div>
-      </ScrollArea>
+      </div>
       <MessageInput onSend={handleSend} />
     </div>
   );

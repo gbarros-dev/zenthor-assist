@@ -39,7 +39,7 @@ export default function RootLayout({
       >
         <ClerkProvider signInUrl="/sign-in" afterSignInUrl="/" afterSignUpUrl="/">
           <Providers>
-            <div className="h-svh">{children}</div>
+            <div className="flex h-svh flex-col overflow-hidden">{children}</div>
           </Providers>
         </ClerkProvider>
       </body>

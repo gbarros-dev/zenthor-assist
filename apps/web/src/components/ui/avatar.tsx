@@ -1,4 +1,5 @@
 import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 function Avatar({ className, children, ...props }: React.ComponentProps<"div">) {
@@ -6,7 +7,7 @@ function Avatar({ className, children, ...props }: React.ComponentProps<"div">) 
     <div
       data-slot="avatar"
       className={cn(
-        "relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted",
+        "bg-muted relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full",
         className,
       )}
       {...props}

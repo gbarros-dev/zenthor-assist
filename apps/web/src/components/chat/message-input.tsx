@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MessageInputProps {
   onSend: (message: string) => void;
@@ -40,7 +41,7 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Type a message..."
-        className="min-h-10 max-h-32 resize-none"
+        className="max-h-32 min-h-10 resize-none"
         disabled={disabled}
       />
       <Button

@@ -1,8 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, User } from "lucide-react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface MessageBubbleProps {
   role: "user" | "assistant" | "system";
@@ -17,9 +18,9 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
       <Avatar className={cn("mt-0.5", isUser ? "bg-primary" : "bg-muted")}>
         <AvatarFallback>
           {isUser ? (
-            <User className="size-4 text-primary-foreground" />
+            <User className="text-primary-foreground size-4" />
           ) : (
-            <Bot className="size-4 text-foreground" />
+            <Bot className="text-foreground size-4" />
           )}
         </AvatarFallback>
       </Avatar>

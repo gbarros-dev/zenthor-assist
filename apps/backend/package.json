@@ -17,17 +17,18 @@
   },
   "dependencies": {
     "@clerk/backend": "^2.29.5",
-    "@convex-dev/aggregate": "^0.2.1",
     "convex": "catalog:",
-    "convex-helpers": "^0.1.111",
-    "dotenv": "catalog:",
-    "svix": "^1.84.1",
-    "zod": "catalog:"
+    "svix": "^1.84.1"
   },
   "devDependencies": {
-    "@clerk/types": "catalog:",
-    "@gbarros-assistant/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "knip": {
+    "ignoreBinaries": [
+      "oxlint",
+      "oxfmt",
+      "knip"
+    ]
   }
 }

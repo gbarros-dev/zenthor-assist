@@ -37,7 +37,12 @@ export default defineSchema({
     content: v.string(),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
     toolCalls: v.optional(v.any()),
-    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("delivered"), v.literal("failed")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("delivered"),
+      v.literal("failed"),
+    ),
   }).index("by_conversationId", ["conversationId"]),
 
   skills: defineTable({
@@ -55,7 +60,12 @@ export default defineSchema({
   agentQueue: defineTable({
     messageId: v.id("messages"),
     conversationId: v.id("conversations"),
-    status: v.union(v.literal("pending"), v.literal("processing"), v.literal("completed"), v.literal("failed")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed"),
+    ),
   })
     .index("by_status", ["status"])
     .index("by_conversationId", ["conversationId"]),

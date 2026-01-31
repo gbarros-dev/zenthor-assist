@@ -1,4 +1,4 @@
-import "@gbarros-assistant/env/web";
+import "@zenthor-assist/env/web";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

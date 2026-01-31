@@ -1,7 +1,7 @@
 "use client";
 
-import { api } from "@gbarros-assistant/backend/convex/_generated/api";
-import type { Id } from "@gbarros-assistant/backend/convex/_generated/dataModel";
+import { api } from "@zenthor-assist/backend/convex/_generated/api";
+import type { Id } from "@zenthor-assist/backend/convex/_generated/dataModel";
 import { useQuery, useMutation } from "convex/react";
 import { useEffect, useRef } from "react";
 

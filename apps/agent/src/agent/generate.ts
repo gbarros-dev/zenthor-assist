@@ -1,5 +1,5 @@
 import { createGateway } from "@ai-sdk/gateway";
-import { env } from "@gbarros-assistant/env/agent";
+import { env } from "@zenthor-assist/env/agent";
 import { generateText, stepCountIs } from "ai";
 
 import { tools } from "./tools";

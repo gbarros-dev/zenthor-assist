@@ -1,4 +1,4 @@
-import { api } from "@gbarros-assistant/backend/convex/_generated/api";
+import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import type { AuthenticationState, SignalDataTypeMap } from "baileys";
 import { initAuthCreds } from "baileys";
 

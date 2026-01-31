@@ -1,6 +1,6 @@
 "use client";
 
-import { api } from "@gbarros-assistant/backend/convex/_generated/api";
+import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { MessageSquare } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";

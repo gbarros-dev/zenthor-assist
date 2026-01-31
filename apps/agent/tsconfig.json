@@ -1,5 +1,5 @@
 {
-  "extends": "@gbarros-assistant/config/tsconfig.base.json",
+  "extends": "@zenthor-assist/config/tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",

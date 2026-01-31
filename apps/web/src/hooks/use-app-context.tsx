@@ -1,6 +1,6 @@
 "use client";
 
-import type { Id } from "@gbarros-assistant/backend/convex/_generated/dataModel";
+import type { Id } from "@zenthor-assist/backend/convex/_generated/dataModel";
 import { createContext, useContext } from "react";
 
 type AppContextType = {

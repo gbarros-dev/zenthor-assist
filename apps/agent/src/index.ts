@@ -2,7 +2,7 @@ import { startAgentLoop } from "./agent/loop";
 import { startWhatsApp } from "./whatsapp/connection";
 
 async function main() {
-  console.info("[main] Starting gbarros-assistant agent...");
+  console.info("[main] Starting zenthor-assist agent...");
 
   const requiredEnv = ["CONVEX_URL", "AI_GATEWAY_API_KEY"];
   for (const key of requiredEnv) {

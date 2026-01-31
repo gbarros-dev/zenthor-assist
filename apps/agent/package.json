@@ -1,5 +1,5 @@
 {
-  "name": "@gbarros-assistant/agent",
+  "name": "@zenthor-assist/agent",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -19,15 +19,15 @@
     "@ai-sdk/gateway": "^3.0.29",
     "@ai-sdk/google": "^3.0.18",
     "@ai-sdk/openai": "^3.0.23",
-    "@gbarros-assistant/backend": "workspace:*",
+    "@zenthor-assist/backend": "workspace:*",
     "ai": "^6.0.0",
     "baileys": "^6.7.16",
     "convex": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@gbarros-assistant/config": "workspace:*",
     "@types/node": "catalog:",
+    "@zenthor-assist/config": "workspace:*",
     "typescript": "catalog:"
   },
   "knip": {
@@ -37,7 +37,7 @@
       "knip"
     ],
     "ignoreDependencies": [
-      "@gbarros-assistant/backend"
+      "@zenthor-assist/backend"
     ]
   }
 }

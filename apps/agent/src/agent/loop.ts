@@ -1,4 +1,4 @@
-import { api } from "@gbarros-assistant/backend/convex/_generated/api";
+import { api } from "@zenthor-assist/backend/convex/_generated/api";
 
 import { getConvexClient } from "../convex/client";
 import { sendWhatsAppMessage } from "../whatsapp/sender";

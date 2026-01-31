@@ -1,8 +1,8 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { api } from "@gbarros-assistant/backend/convex/_generated/api";
-import type { Id } from "@gbarros-assistant/backend/convex/_generated/dataModel";
+import { api } from "@zenthor-assist/backend/convex/_generated/api";
+import type { Id } from "@zenthor-assist/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 

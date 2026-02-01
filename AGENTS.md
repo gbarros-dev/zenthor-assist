@@ -1,89 +1,205 @@
-# Global Agent Guidelines (Codex)
+# Agent Guidelines for zenthor-assist
 
-## Browser Automation Tooling
+## Repository Overview
 
-- **chrome-devtools MCP**: CDP-level access for DevTools diagnostics (network, performance, console, tracing, throttling) and inspecting existing/local Chrome state.
-- **Playwright MCP** or **Vercel agent-browser**: Use one for UI automation flows (navigation, clicks, form fills, screenshots). Prefer Playwright for local E2E parity; agent-browser for hosted/remote browser sessions.
-- **Avoid combining Playwright MCP and agent-browser** unless explicitly needed; they are largely redundant. If you need both automation and DevTools diagnostics, pair chrome-devtools MCP with one automation tool.
-
-## Slash Commands
-
-| Command       | Description                                                            |
-| ------------- | ---------------------------------------------------------------------- |
-| `/quick-test` | Run tests for a specific file or pattern (useful for Lambda functions) |
-
-# Repository Guidelines
-
-## Project Structure & Module Organization
-
-- `apps/web` houses the Next.js UI (`src/components`, `src/app`, and `src/lib`).
-- `apps/backend/convex` contains Convex functions, schema, and generated types.
-- `apps/agent/src` is the Bun-based agent runtime.
-- `packages/config` stores shared TypeScript config (`tsconfig.base.json`).
-- `packages/env` centralizes environment validation and shared env helpers.
-- App-specific configuration lives in `apps/*/.env.local` (do not commit secrets).
+Monorepo using Bun + Turborepo with Next.js frontend, Convex backend, and Bun-based agent runtime. Stack: TypeScript, React 19, TailwindCSS v4, shadcn/ui, Oxlint/Oxfmt.
 
 ## Build, Test, and Development Commands
 
-- `bun install` installs workspace dependencies.
-- `bun run build` runs the Turborepo build pipeline across apps.
-- `bun run typecheck` runs workspace typechecks via Turbo.
-- `bun run lint` runs Oxlint at the repo root; use `bun run format` for Oxfmt.
-- `bun run check` runs lint + format check in one step.
-- `cd apps/web && bun run dev` starts the Next.js app.
-- `cd apps/backend && bun run dev` starts Convex locally; `bun run dev:setup` bootstraps a new Convex project.
-- `cd apps/agent && bun run dev` runs the agent with Bun in watch mode.
-- `bun run clean` and `bun run clean:workspaces` remove build artifacts (destructive).
+| Command | Scope | Description |
+|---------|-------|-------------|
+| `bun install` | Root | Install workspace dependencies |
+| `bun run build` | Root | Turborepo build across all apps/packages |
+| `bun run dev` | Root | Start all apps in dev mode (via turbo) |
+| `bun run typecheck` | Root | TypeScript check via Turbo |
+| `bun run lint` | Root/App | Run Oxlint |
+| `bun run lint:fix` | Root/App | Run Oxlint with auto-fix |
+| `bun run format` | Root/App | Run Oxfmt --write |
+| `bun run format:check` | Root/App | Run Oxfmt --check |
+| `bun run check` | Root | Lint + format check combined |
+| `bun run check:fix` | Root | Lint fix + format write combined |
+| `bun run knip` | Root/App | Find unused exports/dependencies |
+| `bun run knip:fix` | Root/App | Auto-fix knip issues |
+| `bun run clean` | Root | Remove build artifacts (destructive) |
+| `bun run clean:workspaces` | Root | Clean all workspaces |
 
-## Coding Style & Naming Conventions
+### App-Specific Commands
 
-- TypeScript-first codebase; prefer explicit types over `any` (disallowed by lint).
-- Formatting is enforced by Oxfmt: tab indentation (width 2) and double quotes.
-- Import ordering is auto-sorted by Oxfmt; keep groups intact.
-- Unused parameters should be prefixed with `_` to satisfy lint rules.
-- File and component names generally use kebab-case (e.g., `chat-layout.tsx`).
+| App | Dev Command | Notes |
+|-----|-------------|-------|
+| web | `cd apps/web && bun run dev` | Next.js on port 3001 |
+| backend | `cd apps/backend && bun run dev` | Convex dev server |
+| backend | `cd apps/backend && bun run dev:setup` | Bootstrap new Convex project |
+| agent | `cd apps/agent && bun run dev` | Bun watch mode |
 
-## Testing Guidelines
+### Testing
 
-- No dedicated test runner is configured yet. Use `bun run typecheck` and `bun run check` for validation.
-- If you introduce tests, co-locate them and follow `*.test.ts(x)` naming for consistency.
+No dedicated test runner configured. Use `bun run typecheck` and `bun run check` for validation. If adding tests:
+- Co-locate test files with source (`*.test.ts` or `*.test.tsx`)
+- Consider using Bun's built-in test runner: `bun test`
+- Run single test file: `bun test path/to/file.test.ts`
 
-## Commit & Pull Request Guidelines
+## Project Structure
 
-- Commits in this repo use short, imperative summaries (e.g., "Add user sync script").
-- PRs should include: a concise description, relevant issue links, and tests run.
-- UI changes in `apps/web` should include screenshots or short clips.
+```
+zenthor-assist/
+├── apps/
+│   ├── web/              # Next.js frontend (port 3001)
+│   │   ├── src/components/ui/   # shadcn/ui components
+│   │   ├── src/app/             # Next.js app router
+│   │   └── src/lib/             # Utilities (cn, etc.)
+│   ├── backend/          # Convex backend
+│   │   └── convex/       # Convex functions, schema, generated types
+│   └── agent/            # Bun-based agent runtime
+│       └── src/          # Agent loop, WhatsApp connection
+├── packages/
+│   ├── config/           # Shared tsconfig.base.json
+│   └── env/              # Environment validation, shared env helpers
+```
 
-## Configuration & Security
+## Code Style Guidelines
 
-- Secrets belong in `apps/*/.env.local` and Convex dashboards; never commit credentials.
-- Keep `turbo.json` in sync when adding new build or check tasks.
+### TypeScript
 
-## Skills
+- Strict mode enabled with additional checks:
+  - `noUncheckedIndexedAccess: true`
+  - `noUnusedLocals: true`
+  - `noUnusedParameters: true`
+  - `noFallthroughCasesInSwitch: true`
+  - `verbatimModuleSyntax: true`
+- **Never** use `any` - disallowed by lint (`typescript/no-explicit-any: error`)
+- Use explicit types; prefer `as const` over type annotations where applicable
+- Prefer `type` imports: `import type { Foo } from "..."` (enforced)
+- Unused parameters must be prefixed with `_`
 
-A skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and file path so you can open the source for full instructions when using a specific skill.
+### Formatting
 
-### Available skills
+- **Oxfmt** handles all formatting (tab indentation, width 2, double quotes)
+- Import ordering is auto-sorted by Oxfmt - do not manually organize
+- Never use semicolons (handled by formatter)
+- Run `bun run format` before committing
 
-- linear: Manage issues, projects & team workflows in Linear. Use when the user wants to read, create or updates tickets in Linear. (file: /Users/gbarros/.codex/skills/linear/SKILL.md)
-- skill-creator: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations. (file: /Users/gbarros/.codex/skills/.system/skill-creator/SKILL.md)
-- skill-installer: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos). (file: /Users/gbarros/.codex/skills/.system/skill-installer/SKILL.md)
+### Naming Conventions
 
-### How to use skills
+| Type | Convention | Example |
+|------|------------|---------|
+| Files | kebab-case | `chat-layout.tsx` |
+| Components | PascalCase | `function Button() {}` |
+| Hooks | camelCase, use* prefix | `useConversation` |
+| Utils | camelCase | `cn`, `formatDate` |
+| Types/Interfaces | PascalCase | `type UserProps = {}` |
+| Constants | SCREAMING_SNAKE_CASE | `API_ENDPOINT` |
 
-- Discovery: The list above is the skills available in this session (name + description + file path). Skill bodies live on disk at the listed paths.
-- Trigger rules: If the user names a skill (with `$SkillName` or plain text) OR the task clearly matches a skill's description shown above, you must use that skill for that turn. Multiple mentions mean use them all. Do not carry skills across turns unless re-mentioned.
-- Missing/blocked: If a named skill is not in the list or the path cannot be read, say so briefly and continue with the best fallback.
-- How to use a skill (progressive disclosure):
-  1. After deciding to use a skill, open its `SKILL.md`. Read only enough to follow the workflow.
-  2. If `SKILL.md` points to extra folders such as `references/`, load only the specific files needed for the request; do not bulk-load everything.
-  3. If `scripts/` exist, prefer running or patching them instead of retyping large code blocks.
-  4. If `assets/` or templates exist, reuse them instead of recreating from scratch.
-- Coordination and sequencing:
-  - If multiple skills apply, choose the minimal set that covers the request and state the order you will use them.
-  - Announce which skill(s) you are using and why (one short line). If you skip an obvious skill, say why.
-- Context hygiene:
-  - Keep context small: summarize long sections instead of pasting them; only load extra files when needed.
-  - Avoid deep reference-chasing: prefer opening only files directly linked from `SKILL.md` unless you are blocked.
-  - When variants exist (frameworks, providers, domains), pick only the relevant reference file(s) and note that choice.
-- Safety and fallback: If a skill cannot be applied cleanly (missing files, unclear instructions), state the issue, pick the next-best approach, and continue.
+### Imports
+
+```typescript
+// Good - type imports explicit
+import type { ReactNode } from "react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+
+// Good - workspace imports
+import { schema } from "@zenthor-assist/backend";
+import { env } from "@zenthor-assist/env";
+```
+
+### Error Handling
+
+```typescript
+// Console logging - use appropriate levels
+console.info("[context] Informational message");
+console.error("[context] Error message:", error);
+
+// Top-level errors
+process.exit(1); // For fatal initialization errors
+
+// Async errors
+try {
+  await riskyOperation();
+} catch (error) {
+  console.error("[context] Operation failed:", error);
+  // Continue or re-throw based on severity
+}
+```
+
+### React Components (shadcn/ui pattern)
+
+```typescript
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+const componentVariants = cva("base-classes", {
+  variants: {
+    variant: { default: "..." },
+    size: { default: "..." },
+  },
+  defaultVariants: {
+    variant: "default",
+    size: "default",
+  },
+});
+
+function Component({
+  className,
+  variant = "default",
+  size = "default",
+  ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof componentVariants>) {
+  return (
+    <div
+      className={cn(componentVariants({ variant, size, className }))}
+      {...props}
+    />
+  );
+}
+```
+
+### Convex Functions
+
+```typescript
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const myQuery = query({
+  args: { id: v.id("tableName") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+```
+
+## Lint Rules (Oxlint)
+
+Key enforced rules:
+- `no-unused-vars` - Prefix unused with `_`
+- `eqeqeq` - Always use `===` and `!==`
+- `no-console` - Warns on bare console (allows info/warn/error/debug)
+- `typescript/consistent-type-imports` - Separate type imports
+- `react-hooks/rules-of-hooks` - Hook rules enforced
+- `react-hooks/exhaustive-deps` - Warn on missing deps
+
+Ignored patterns: `node_modules`, `dist`, `_generated`, `.next`, `*.d.ts`
+
+## Environment & Security
+
+- Secrets live in `apps/*/.env.local` (gitignored)
+- Never commit credentials to repo
+- Use `@zenthor-assist/env` for shared environment validation
+- Global env vars defined in `turbo.json`
+
+## Pull Request Guidelines
+
+- Use imperative mood ("Add feature", not "Added feature")
+- Keep commits atomic and focused
+- Include screenshots for UI changes
+- Run `bun run check` before opening PR
+
+## Useful Aliases
+
+| Workspace | Import Alias | Path |
+|-----------|--------------|------|
+| web | `@/*` | `./src/*` |
+| web | `@/components/*` | `./src/components/*` |
+| web | `@/lib/*` | `./src/lib/*` |
+| agent | `@/*` | `./*` |

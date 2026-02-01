@@ -6,35 +6,36 @@ Monorepo using Bun + Turborepo with Next.js frontend, Convex backend, and Bun-ba
 
 ## Build, Test, and Development Commands
 
-| Command | Scope | Description |
-|---------|-------|-------------|
-| `bun install` | Root | Install workspace dependencies |
-| `bun run build` | Root | Turborepo build across all apps/packages |
-| `bun run dev` | Root | Start all apps in dev mode (via turbo) |
-| `bun run typecheck` | Root | TypeScript check via Turbo |
-| `bun run lint` | Root/App | Run Oxlint |
-| `bun run lint:fix` | Root/App | Run Oxlint with auto-fix |
-| `bun run format` | Root/App | Run Oxfmt --write |
-| `bun run format:check` | Root/App | Run Oxfmt --check |
-| `bun run check` | Root | Lint + format check combined |
-| `bun run check:fix` | Root | Lint fix + format write combined |
-| `bun run knip` | Root/App | Find unused exports/dependencies |
-| `bun run knip:fix` | Root/App | Auto-fix knip issues |
-| `bun run clean` | Root | Remove build artifacts (destructive) |
-| `bun run clean:workspaces` | Root | Clean all workspaces |
+| Command                    | Scope    | Description                              |
+| -------------------------- | -------- | ---------------------------------------- |
+| `bun install`              | Root     | Install workspace dependencies           |
+| `bun run build`            | Root     | Turborepo build across all apps/packages |
+| `bun run dev`              | Root     | Start all apps in dev mode (via turbo)   |
+| `bun run typecheck`        | Root     | TypeScript check via Turbo               |
+| `bun run lint`             | Root/App | Run Oxlint                               |
+| `bun run lint:fix`         | Root/App | Run Oxlint with auto-fix                 |
+| `bun run format`           | Root/App | Run Oxfmt --write                        |
+| `bun run format:check`     | Root/App | Run Oxfmt --check                        |
+| `bun run check`            | Root     | Lint + format check combined             |
+| `bun run check:fix`        | Root     | Lint fix + format write combined         |
+| `bun run knip`             | Root/App | Find unused exports/dependencies         |
+| `bun run knip:fix`         | Root/App | Auto-fix knip issues                     |
+| `bun run clean`            | Root     | Remove build artifacts (destructive)     |
+| `bun run clean:workspaces` | Root     | Clean all workspaces                     |
 
 ### App-Specific Commands
 
-| App | Dev Command | Notes |
-|-----|-------------|-------|
-| web | `cd apps/web && bun run dev` | Next.js on port 3001 |
-| backend | `cd apps/backend && bun run dev` | Convex dev server |
+| App     | Dev Command                            | Notes                        |
+| ------- | -------------------------------------- | ---------------------------- |
+| web     | `cd apps/web && bun run dev`           | Next.js on port 3001         |
+| backend | `cd apps/backend && bun run dev`       | Convex dev server            |
 | backend | `cd apps/backend && bun run dev:setup` | Bootstrap new Convex project |
-| agent | `cd apps/agent && bun run dev` | Bun watch mode |
+| agent   | `cd apps/agent && bun run dev`         | Bun watch mode               |
 
 ### Testing
 
 No dedicated test runner configured. Use `bun run typecheck` and `bun run check` for validation. If adding tests:
+
 - Co-locate test files with source (`*.test.ts` or `*.test.tsx`)
 - Consider using Bun's built-in test runner: `bun test`
 - Run single test file: `bun test path/to/file.test.ts`
@@ -81,14 +82,14 @@ zenthor-assist/
 
 ### Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Files | kebab-case | `chat-layout.tsx` |
-| Components | PascalCase | `function Button() {}` |
-| Hooks | camelCase, use* prefix | `useConversation` |
-| Utils | camelCase | `cn`, `formatDate` |
-| Types/Interfaces | PascalCase | `type UserProps = {}` |
-| Constants | SCREAMING_SNAKE_CASE | `API_ENDPOINT` |
+| Type             | Convention              | Example                |
+| ---------------- | ----------------------- | ---------------------- |
+| Files            | kebab-case              | `chat-layout.tsx`      |
+| Components       | PascalCase              | `function Button() {}` |
+| Hooks            | camelCase, use\* prefix | `useConversation`      |
+| Utils            | camelCase               | `cn`, `formatDate`     |
+| Types/Interfaces | PascalCase              | `type UserProps = {}`  |
+| Constants        | SCREAMING_SNAKE_CASE    | `API_ENDPOINT`         |
 
 ### Imports
 
@@ -172,6 +173,7 @@ export const myQuery = query({
 ## Lint Rules (Oxlint)
 
 Key enforced rules:
+
 - `no-unused-vars` - Prefix unused with `_`
 - `eqeqeq` - Always use `===` and `!==`
 - `no-console` - Warns on bare console (allows info/warn/error/debug)
@@ -197,9 +199,9 @@ Ignored patterns: `node_modules`, `dist`, `_generated`, `.next`, `*.d.ts`
 
 ## Useful Aliases
 
-| Workspace | Import Alias | Path |
-|-----------|--------------|------|
-| web | `@/*` | `./src/*` |
-| web | `@/components/*` | `./src/components/*` |
-| web | `@/lib/*` | `./src/lib/*` |
-| agent | `@/*` | `./*` |
+| Workspace | Import Alias     | Path                 |
+| --------- | ---------------- | -------------------- |
+| web       | `@/*`            | `./src/*`            |
+| web       | `@/components/*` | `./src/components/*` |
+| web       | `@/lib/*`        | `./src/lib/*`        |
+| agent     | `@/*`            | `./*`                |

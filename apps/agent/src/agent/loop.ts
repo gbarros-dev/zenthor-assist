@@ -2,7 +2,8 @@ import { api } from "@zenthor-assist/backend/convex/_generated/api";
 
 import { getConvexClient } from "../convex/client";
 import { sendWhatsAppMessage } from "../whatsapp/sender";
-import { generateResponse } from "./generate";
+import { compactMessages } from "./compact";
+import { generateResponse, generateResponseStreaming } from "./generate";
 
 export function startAgentLoop() {
   const client = getConvexClient();
@@ -27,20 +28,68 @@ export function startAgentLoop() {
         }
 
         const conversationMessages = context.messages
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+          .filter((m) => m.role === "user" || m.role === "assistant" || m.role === "system")
+          .map((m) => ({
+            role: m.role as "user" | "assistant" | "system",
+            content: m.content,
+          }));
 
-        const response = await generateResponse(conversationMessages);
+        const { messages: compactedMessages, summary } =
+          await compactMessages(conversationMessages);
 
-        await client.mutation(api.messages.addAssistantMessage, {
-          conversationId: job.conversationId,
-          content: response.content,
-          channel: context.conversation.channel,
-          toolCalls: response.toolCalls,
-        });
+        if (summary) {
+          await client.mutation(api.messages.addSummaryMessage, {
+            conversationId: job.conversationId,
+            content: summary,
+            channel: context.conversation.channel,
+          });
+          console.info(`[agent] Compacted conversation ${job.conversationId}`);
+        }
 
-        if (context.conversation.channel === "whatsapp" && context.contact?.phone) {
-          await sendWhatsAppMessage(context.contact.phone, response.content);
+        const isWeb = context.conversation.channel === "web";
+
+        if (isWeb) {
+          const placeholderId = await client.mutation(api.messages.createPlaceholder, {
+            conversationId: job.conversationId,
+            channel: "web",
+          });
+
+          let lastPatchTime = 0;
+          const THROTTLE_MS = 200;
+
+          const response = await generateResponseStreaming(compactedMessages, context.skills, {
+            onChunk: (accumulatedText) => {
+              const now = Date.now();
+              if (now - lastPatchTime >= THROTTLE_MS) {
+                lastPatchTime = now;
+                client
+                  .mutation(api.messages.updateStreamingContent, {
+                    messageId: placeholderId,
+                    content: accumulatedText,
+                  })
+                  .catch(() => {});
+              }
+            },
+          });
+
+          await client.mutation(api.messages.finalizeMessage, {
+            messageId: placeholderId,
+            content: response.content,
+            toolCalls: response.toolCalls,
+          });
+        } else {
+          const response = await generateResponse(compactedMessages, context.skills);
+
+          await client.mutation(api.messages.addAssistantMessage, {
+            conversationId: job.conversationId,
+            content: response.content,
+            channel: context.conversation.channel,
+            toolCalls: response.toolCalls,
+          });
+
+          if (context.conversation.channel === "whatsapp" && context.contact?.phone) {
+            await sendWhatsAppMessage(context.contact.phone, response.content);
+          }
         }
 
         await client.mutation(api.agent.completeJob, { jobId: job._id });

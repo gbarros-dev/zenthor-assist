@@ -2,7 +2,7 @@
 
 import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { Archive, ArrowLeft, LayoutDashboard, MessageSquare, Plus } from "lucide-react";
+import { Archive, ArrowLeft, LayoutDashboard, MessageSquare, Plus, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -100,6 +100,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 >
                   <MessageSquare />
                   <span>Chats</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/skills"} tooltip="Skills">
+                  <Link href={"/skills" as "/"}>
+                    <Sparkles />
+                    <span>Skills</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

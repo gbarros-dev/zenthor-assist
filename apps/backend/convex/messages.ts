@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
-import { getConversationIfOwner } from "./lib/auth";
+import { getConversationIfOwner, isValidServiceKey } from "./lib/auth";
 
 const messageDoc = v.object({
   _id: v.id("messages"),
@@ -62,13 +62,15 @@ export const send = mutation({
 
 export const addAssistantMessage = mutation({
   args: {
+    serviceKey: v.optional(v.string()),
     conversationId: v.id("conversations"),
     content: v.string(),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
     toolCalls: v.optional(v.any()),
   },
-  returns: v.id("messages"),
+  returns: v.union(v.id("messages"), v.null()),
   handler: async (ctx, args) => {
+    if (!isValidServiceKey(args.serviceKey)) return null;
     return await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "assistant",
@@ -82,12 +84,14 @@ export const addAssistantMessage = mutation({
 
 export const addSummaryMessage = mutation({
   args: {
+    serviceKey: v.optional(v.string()),
     conversationId: v.id("conversations"),
     content: v.string(),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
   },
-  returns: v.id("messages"),
+  returns: v.union(v.id("messages"), v.null()),
   handler: async (ctx, args) => {
+    if (!isValidServiceKey(args.serviceKey)) return null;
     return await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "system",
@@ -100,11 +104,13 @@ export const addSummaryMessage = mutation({
 
 export const createPlaceholder = mutation({
   args: {
+    serviceKey: v.optional(v.string()),
     conversationId: v.id("conversations"),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
   },
-  returns: v.id("messages"),
+  returns: v.union(v.id("messages"), v.null()),
   handler: async (ctx, args) => {
+    if (!isValidServiceKey(args.serviceKey)) return null;
     return await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "assistant",
@@ -118,23 +124,27 @@ export const createPlaceholder = mutation({
 
 export const updateStreamingContent = mutation({
   args: {
+    serviceKey: v.optional(v.string()),
     messageId: v.id("messages"),
     content: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!isValidServiceKey(args.serviceKey)) return null;
     await ctx.db.patch(args.messageId, { content: args.content });
   },
 });
 
 export const finalizeMessage = mutation({
   args: {
+    serviceKey: v.optional(v.string()),
     messageId: v.id("messages"),
     content: v.string(),
     toolCalls: v.optional(v.any()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!isValidServiceKey(args.serviceKey)) return null;
     await ctx.db.patch(args.messageId, {
       content: args.content,
       toolCalls: args.toolCalls,

@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
-import { getAuthUser, getConversationIfOwner } from "./lib/auth";
+import { getAuthUser, getConversationIfOwner, isValidServiceKey } from "./lib/auth";
 
 const conversationDoc = v.object({
   _id: v.id("conversations"),
@@ -16,13 +16,15 @@ const conversationDoc = v.object({
 
 export const getOrCreate = mutation({
   args: {
+    serviceKey: v.optional(v.string()),
     userId: v.optional(v.id("users")),
     contactId: v.optional(v.id("contacts")),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
     agentId: v.optional(v.id("agents")),
   },
-  returns: v.id("conversations"),
+  returns: v.union(v.id("conversations"), v.null()),
   handler: async (ctx, args) => {
+    if (!isValidServiceKey(args.serviceKey)) return null;
     if (args.channel === "web" && args.userId) {
       const existing = await ctx.db
         .query("conversations")
@@ -72,17 +74,6 @@ export const listByUser = query({
     return await ctx.db
       .query("conversations")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
-  },
-});
-
-export const listByContact = query({
-  args: { contactId: v.id("contacts") },
-  returns: v.array(conversationDoc),
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("conversations")
-      .withIndex("by_contactId", (q) => q.eq("contactId", args.contactId))
       .collect();
   },
 });

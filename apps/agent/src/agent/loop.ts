@@ -154,6 +154,7 @@ export function startAgentLoop() {
 
         if (summary) {
           await client.mutation(api.messages.addSummaryMessage, {
+            serviceKey,
             conversationId: job.conversationId,
             content: summary,
             channel: context.conversation.channel,
@@ -254,9 +255,11 @@ export function startAgentLoop() {
 
         if (isWeb) {
           const placeholderId = await client.mutation(api.messages.createPlaceholder, {
+            serviceKey,
             conversationId: job.conversationId,
             channel: "web",
           });
+          if (!placeholderId) continue;
 
           let lastPatchTime = 0;
           const THROTTLE_MS = 200;
@@ -271,6 +274,7 @@ export function startAgentLoop() {
                   lastPatchTime = now;
                   client
                     .mutation(api.messages.updateStreamingContent, {
+                      serviceKey,
                       messageId: placeholderId,
                       content: accumulatedText,
                     })
@@ -302,6 +306,7 @@ export function startAgentLoop() {
             });
 
           await client.mutation(api.messages.finalizeMessage, {
+            serviceKey,
             messageId: placeholderId,
             content: response.content,
             toolCalls: response.toolCalls,
@@ -318,13 +323,14 @@ export function startAgentLoop() {
             channel === "whatsapp" ? sanitizeForWhatsApp(response.content) : response.content;
 
           const assistantMessageId = await client.mutation(api.messages.addAssistantMessage, {
+            serviceKey,
             conversationId: job.conversationId,
             content,
             channel: context.conversation.channel,
             toolCalls: response.toolCalls,
           });
 
-          if (channel === "whatsapp" && context.contact?.phone) {
+          if (channel === "whatsapp" && context.contact?.phone && assistantMessageId) {
             await client.mutation(api.delivery.enqueueOutbound, {
               serviceKey,
               channel: "whatsapp",

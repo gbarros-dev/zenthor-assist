@@ -81,12 +81,14 @@ export function wrapToolsWithApproval(
         void logger.lineInfo(`[tool-approval] Requesting approval for tool '${name}'`);
 
         const approvalId = await client.mutation(api.toolApprovals.create, {
+          serviceKey: env.AGENT_SECRET,
           conversationId: context.conversationId as Id<"conversations">,
           jobId: context.jobId as Id<"agentQueue">,
           toolName: name,
           toolInput: args,
           channel: context.channel,
         });
+        if (!approvalId) return `Tool '${name}' approval failed (unauthorized).`;
         void logger.info("agent.tool.approval.requested", {
           approvalId,
           toolName: name,
@@ -98,23 +100,26 @@ export function wrapToolsWithApproval(
         if (context.channel === "whatsapp" && context.phone) {
           const prompt = `🔐 I'd like to use the tool '${name}'. Reply YES to approve or NO to reject.`;
           const messageId = await client.mutation(api.messages.addAssistantMessage, {
-            conversationId: context.conversationId as Id<"conversations">,
-            content: prompt,
-            channel: "whatsapp",
-          });
-          await client.mutation(api.delivery.enqueueOutbound, {
             serviceKey: env.AGENT_SECRET,
-            channel: "whatsapp",
-            accountId: env.WHATSAPP_ACCOUNT_ID ?? "default",
             conversationId: context.conversationId as Id<"conversations">,
-            messageId,
-            to: context.phone,
             content: prompt,
-            metadata: {
-              kind: "tool_approval_request",
-              toolName: name,
-            },
+            channel: "whatsapp",
           });
+          if (messageId) {
+            await client.mutation(api.delivery.enqueueOutbound, {
+              serviceKey: env.AGENT_SECRET,
+              channel: "whatsapp",
+              accountId: env.WHATSAPP_ACCOUNT_ID ?? "default",
+              conversationId: context.conversationId as Id<"conversations">,
+              messageId,
+              to: context.phone,
+              content: prompt,
+              metadata: {
+                kind: "tool_approval_request",
+                toolName: name,
+              },
+            });
+          }
         }
 
         void logger.lineInfo(

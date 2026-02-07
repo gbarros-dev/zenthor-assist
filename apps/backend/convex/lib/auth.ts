@@ -13,9 +13,9 @@ type Ctx = QueryCtx | MutationCtx;
  * noise from expected rejections.
  */
 export function isValidServiceKey(serviceKey?: string): boolean {
-	const expected = process.env.AGENT_SECRET;
-	if (!expected) return true;
-	return !!serviceKey && serviceKey === expected;
+  const expected = process.env.AGENT_SECRET;
+  if (!expected) return true;
+  return !!serviceKey && serviceKey === expected;
 }
 
 /**
@@ -26,12 +26,12 @@ export function isValidServiceKey(serviceKey?: string): boolean {
  * return empty results instead of generating Sentry noise.
  */
 export async function getAuthUser(ctx: Ctx): Promise<Doc<"users"> | null> {
-	const identity = await ctx.auth.getUserIdentity();
-	if (!identity) return null;
-	return await ctx.db
-		.query("users")
-		.withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
-		.first();
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) return null;
+  return await ctx.db
+    .query("users")
+    .withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
+    .first();
 }
 
 /**
@@ -40,17 +40,17 @@ export async function getAuthUser(ctx: Ctx): Promise<Doc<"users"> | null> {
  * ownership patterns.
  */
 export async function getConversationIfOwner(
-	ctx: Ctx,
-	conversationId: Id<"conversations">,
+  ctx: Ctx,
+  conversationId: Id<"conversations">,
 ): Promise<Doc<"conversations"> | null> {
-	const user = await getAuthUser(ctx);
-	if (!user) return null;
-	const conversation = await ctx.db.get(conversationId);
-	if (!conversation) return null;
-	if (conversation.userId && conversation.userId === user._id) return conversation;
-	if (conversation.contactId) {
-		const contact = await ctx.db.get(conversation.contactId);
-		if (contact && contact.userId === user._id) return conversation;
-	}
-	return null;
+  const user = await getAuthUser(ctx);
+  if (!user) return null;
+  const conversation = await ctx.db.get(conversationId);
+  if (!conversation) return null;
+  if (conversation.userId && conversation.userId === user._id) return conversation;
+  if (conversation.contactId) {
+    const contact = await ctx.db.get(conversation.contactId);
+    if (contact && contact.userId === user._id) return conversation;
+  }
+  return null;
 }

@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
 import { internalMutation, mutation, query } from "./_generated/server";
-import { getConversationIfOwner } from "./lib/auth";
+import { getConversationIfOwner, isValidServiceKey } from "./lib/auth";
 
 /** Must match APPROVAL_TIMEOUT_MS in apps/agent/src/agent/tool-approval.ts */
 const APPROVAL_TTL_MS = 5 * 60 * 1_000;
@@ -21,14 +21,16 @@ const toolApprovalDoc = v.object({
 
 export const create = mutation({
   args: {
+    serviceKey: v.optional(v.string()),
     conversationId: v.id("conversations"),
     jobId: v.id("agentQueue"),
     toolName: v.string(),
     toolInput: v.any(),
     channel: v.union(v.literal("web"), v.literal("whatsapp")),
   },
-  returns: v.id("toolApprovals"),
+  returns: v.union(v.id("toolApprovals"), v.null()),
   handler: async (ctx, args) => {
+    if (!isValidServiceKey(args.serviceKey)) return null;
     return await ctx.db.insert("toolApprovals", {
       conversationId: args.conversationId,
       jobId: args.jobId,

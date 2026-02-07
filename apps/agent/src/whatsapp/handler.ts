@@ -1,4 +1,5 @@
 import { api } from "@zenthor-assist/backend/convex/_generated/api";
+import { env } from "@zenthor-assist/env/agent";
 import type { WAMessage } from "baileys";
 
 import { getConvexClient } from "../convex/client";
@@ -60,9 +61,12 @@ export async function handleIncomingMessage(message: WAMessage) {
   }
 
   const conversationId = await client.mutation(api.conversations.getOrCreate, {
+    serviceKey: env.AGENT_SECRET,
     contactId: contact._id,
     channel: "whatsapp",
   });
+
+  if (!conversationId) return;
 
   // Check for pending tool approvals before normal message handling
   const pendingApprovals = await client.query(api.toolApprovals.getPendingByConversation, {

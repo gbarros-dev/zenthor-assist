@@ -66,6 +66,7 @@ const userDoc = v.object({
   email: v.string(),
   emailVerified: v.optional(v.boolean()),
   image: v.optional(v.string()),
+  phone: v.optional(v.string()),
   status: v.union(v.literal("active"), v.literal("inactive")),
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -77,6 +78,7 @@ const contactDoc = v.object({
   phone: v.string(),
   name: v.string(),
   isAllowed: v.boolean(),
+  userId: v.optional(v.id("users")),
 });
 
 const conversationDoc = v.object({

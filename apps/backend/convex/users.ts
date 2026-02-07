@@ -10,6 +10,7 @@ const userDoc = v.object({
   email: v.string(),
   emailVerified: v.optional(v.boolean()),
   image: v.optional(v.string()),
+  phone: v.optional(v.string()),
   status: v.union(v.literal("active"), v.literal("inactive")),
   createdAt: v.number(),
   updatedAt: v.number(),

@@ -21,6 +21,7 @@ import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
+import type * as phoneVerification from "../phoneVerification.js";
 import type * as plugins from "../plugins.js";
 import type * as privateData from "../privateData.js";
 import type * as scheduledTasks from "../scheduledTasks.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   memories: typeof memories;
   messages: typeof messages;
+  phoneVerification: typeof phoneVerification;
   plugins: typeof plugins;
   privateData: typeof privateData;
   scheduledTasks: typeof scheduledTasks;

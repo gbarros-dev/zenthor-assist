@@ -153,14 +153,43 @@ export const listRecentWithLastMessage = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const conversations = await ctx.db
+    // 1. Web conversations by userId
+    const webConversations = await ctx.db
       .query("conversations")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .filter((q) => q.eq(q.field("status"), "active"))
       .collect();
 
+    // 2. WhatsApp conversations via linked contacts
+    const linkedContacts = await ctx.db
+      .query("contacts")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    const whatsappConversations = (
+      await Promise.all(
+        linkedContacts.map((contact) =>
+          ctx.db
+            .query("conversations")
+            .withIndex("by_contactId", (q) => q.eq("contactId", contact._id))
+            .filter((q) => q.eq(q.field("channel"), "whatsapp"))
+            .filter((q) => q.eq(q.field("status"), "active"))
+            .collect(),
+        ),
+      )
+    ).flat();
+
+    // 3. Deduplicate by _id
+    const seen = new Set<string>();
+    const allConversations = [...webConversations, ...whatsappConversations].filter((conv) => {
+      if (seen.has(conv._id)) return false;
+      seen.add(conv._id);
+      return true;
+    });
+
+    // 4. Attach last message and sort by recency
     const results = await Promise.all(
-      conversations.map(async (conv) => {
+      allConversations.map(async (conv) => {
         const messages = await ctx.db
           .query("messages")
           .withIndex("by_conversationId", (q) => q.eq("conversationId", conv._id))

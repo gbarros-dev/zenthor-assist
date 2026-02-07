@@ -8,18 +8,34 @@ export default defineSchema({
     email: v.string(),
     emailVerified: v.optional(v.boolean()),
     image: v.optional(v.string()),
+    phone: v.optional(v.string()),
     status: v.union(v.literal("active"), v.literal("inactive")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_externalId", ["externalId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_phone", ["phone"]),
 
   contacts: defineTable({
     phone: v.string(),
     name: v.string(),
     isAllowed: v.boolean(),
-  }).index("by_phone", ["phone"]),
+    userId: v.optional(v.id("users")),
+  })
+    .index("by_phone", ["phone"])
+    .index("by_userId", ["userId"]),
+
+  phoneVerifications: defineTable({
+    userId: v.id("users"),
+    phone: v.string(),
+    code: v.string(),
+    status: v.union(v.literal("pending"), v.literal("verified"), v.literal("expired")),
+    createdAt: v.number(),
+    verifiedAt: v.optional(v.number()),
+  })
+    .index("by_userId_status", ["userId", "status"])
+    .index("by_phone_status", ["phone", "status"]),
 
   conversations: defineTable({
     channel: v.union(v.literal("whatsapp"), v.literal("web")),

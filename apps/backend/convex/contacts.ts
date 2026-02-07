@@ -11,6 +11,7 @@ export const getByPhone = query({
       phone: v.string(),
       name: v.string(),
       isAllowed: v.boolean(),
+      userId: v.optional(v.id("users")),
     }),
     v.null(),
   ),
@@ -56,6 +57,7 @@ export const list = query({
       phone: v.string(),
       name: v.string(),
       isAllowed: v.boolean(),
+      userId: v.optional(v.id("users")),
     }),
   ),
   handler: async (ctx) => {

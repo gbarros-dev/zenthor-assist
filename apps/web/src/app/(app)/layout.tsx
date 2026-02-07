@@ -23,7 +23,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     async function init() {
       const uId = await getOrCreateUser({
-        externalId: user!.id,
         name: user!.fullName || user!.firstName || "User",
         email: user!.primaryEmailAddress?.emailAddress,
         image: user!.imageUrl,

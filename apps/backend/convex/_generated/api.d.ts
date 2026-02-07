@@ -21,6 +21,7 @@ import type * as delivery from "../delivery.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
 import type * as inboundDedupe from "../inboundDedupe.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
 import type * as phoneVerification from "../phoneVerification.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   healthCheck: typeof healthCheck;
   http: typeof http;
   inboundDedupe: typeof inboundDedupe;
+  "lib/auth": typeof lib_auth;
   memories: typeof memories;
   messages: typeof messages;
   phoneVerification: typeof phoneVerification;

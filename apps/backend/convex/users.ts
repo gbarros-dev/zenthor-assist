@@ -1,6 +1,7 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { requireIdentity, requireUser } from "./lib/auth";
 
 const userDoc = v.object({
   _id: v.id("users"),
@@ -20,6 +21,10 @@ export const getByExternalId = query({
   args: { externalId: v.string() },
   returns: v.union(userDoc, v.null()),
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (identity.subject !== args.externalId) {
+      throw new ConvexError("Access denied");
+    }
     return await ctx.db
       .query("users")
       .withIndex("by_externalId", (q) => q.eq("externalId", args.externalId))
@@ -29,23 +34,25 @@ export const getByExternalId = query({
 
 export const getOrCreateFromClerk = mutation({
   args: {
-    externalId: v.string(),
     name: v.string(),
     email: v.optional(v.string()),
     image: v.optional(v.string()),
   },
   returns: v.id("users"),
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    const externalId = identity.subject;
+
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_externalId", (q) => q.eq("externalId", args.externalId))
+      .withIndex("by_externalId", (q) => q.eq("externalId", externalId))
       .first();
 
     if (existing) return existing._id;
 
     const now = Date.now();
     return await ctx.db.insert("users", {
-      externalId: args.externalId,
+      externalId,
       name: args.name,
       email: args.email ?? "",
       image: args.image,
@@ -70,10 +77,20 @@ export const getCurrentUser = query({
   },
 });
 
+/** Authenticated version that throws on missing identity/user. */
+export const me = query({
+  args: {},
+  returns: userDoc,
+  handler: async (ctx) => {
+    return await requireUser(ctx);
+  },
+});
+
 export const list = query({
   args: {},
   returns: v.array(userDoc),
   handler: async (ctx) => {
+    await requireIdentity(ctx);
     return await ctx.db.query("users").collect();
   },
 });

@@ -1,7 +1,9 @@
 import { createGateway } from "@ai-sdk/gateway";
 import { env } from "@zenthor-assist/env/agent";
+import type { Tool } from "ai";
 import { generateText, stepCountIs, streamText } from "ai";
 
+import { runWithFallback } from "./model-fallback";
 import { tools } from "./tools";
 import { getWebSearchTool } from "./tools/web-search";
 
@@ -17,13 +19,32 @@ interface Skill {
   config?: { systemPrompt?: string };
 }
 
+export interface AgentConfig {
+  systemPrompt?: string;
+  model?: string;
+  fallbackModel?: string;
+  toolPolicy?: { allow?: string[]; deny?: string[] };
+}
+
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
 }
 
-function buildSystemPrompt(skills?: Skill[]): string {
-  if (!skills || skills.length === 0) return BASE_SYSTEM_PROMPT;
+interface GenerateResult {
+  content: string;
+  toolCalls?: unknown[];
+  modelUsed: string;
+}
+
+function getModel(name: string) {
+  return gateway(name);
+}
+
+function buildSystemPrompt(skills?: Skill[], agentConfig?: AgentConfig): string {
+  const basePrompt = agentConfig?.systemPrompt ?? BASE_SYSTEM_PROMPT;
+
+  if (!skills || skills.length === 0) return basePrompt;
 
   const skillsSection = skills
     .map((s) => {
@@ -33,34 +54,53 @@ function buildSystemPrompt(skills?: Skill[]): string {
     })
     .join("\n\n");
 
-  return `${BASE_SYSTEM_PROMPT}\n\n## Active Skills\n\n${skillsSection}`;
+  return `${basePrompt}\n\n## Active Skills\n\n${skillsSection}`;
 }
 
-export const model = gateway(env.AI_MODEL);
+function getDefaultTools(modelName: string): Record<string, Tool> {
+  return {
+    ...tools,
+    ...getWebSearchTool(modelName),
+  };
+}
 
 export async function generateResponse(
   conversationMessages: Message[],
   skills?: Skill[],
-): Promise<{ content: string; toolCalls?: unknown[] }> {
-  const result = await generateText({
-    model,
-    system: buildSystemPrompt(skills),
-    messages: conversationMessages,
-    tools: {
-      ...tools,
-      ...getWebSearchTool(env.AI_MODEL),
+  options?: {
+    modelOverride?: string;
+    toolsOverride?: Record<string, Tool>;
+    agentConfig?: AgentConfig;
+  },
+): Promise<GenerateResult> {
+  const primaryModel = options?.agentConfig?.model ?? options?.modelOverride ?? env.AI_MODEL;
+  const fallbackModel = options?.agentConfig?.fallbackModel ?? env.AI_FALLBACK_MODEL;
+
+  const { result, modelUsed } = await runWithFallback({
+    primaryModel,
+    fallbackModel,
+    run: async (modelName) => {
+      const m = getModel(modelName);
+      const result = await generateText({
+        model: m,
+        system: buildSystemPrompt(skills, options?.agentConfig),
+        messages: conversationMessages,
+        tools: options?.toolsOverride ?? getDefaultTools(modelName),
+        stopWhen: stepCountIs(10),
+      });
+
+      const toolCalls = result.steps
+        .flatMap((step) => step.toolCalls)
+        .map((tc) => ({ name: tc.toolName, input: tc.input }));
+
+      return {
+        content: result.text,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      };
     },
-    stopWhen: stepCountIs(10),
   });
 
-  const toolCalls = result.steps
-    .flatMap((step) => step.toolCalls)
-    .map((tc) => ({ name: tc.toolName, input: tc.input }));
-
-  return {
-    content: result.text,
-    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-  };
+  return { ...result, modelUsed };
 }
 
 interface StreamCallbacks {
@@ -71,32 +111,46 @@ export async function generateResponseStreaming(
   conversationMessages: Message[],
   skills?: Skill[],
   callbacks?: StreamCallbacks,
-): Promise<{ content: string; toolCalls?: unknown[] }> {
-  const result = streamText({
-    model,
-    system: buildSystemPrompt(skills),
-    messages: conversationMessages,
-    tools: {
-      ...tools,
-      ...getWebSearchTool(env.AI_MODEL),
+  options?: {
+    modelOverride?: string;
+    toolsOverride?: Record<string, Tool>;
+    agentConfig?: AgentConfig;
+  },
+): Promise<GenerateResult> {
+  const primaryModel = options?.agentConfig?.model ?? options?.modelOverride ?? env.AI_MODEL;
+  const fallbackModel = options?.agentConfig?.fallbackModel ?? env.AI_FALLBACK_MODEL;
+
+  const { result, modelUsed } = await runWithFallback({
+    primaryModel,
+    fallbackModel,
+    run: async (modelName) => {
+      const m = getModel(modelName);
+      const streamResult = streamText({
+        model: m,
+        system: buildSystemPrompt(skills, options?.agentConfig),
+        messages: conversationMessages,
+        tools: options?.toolsOverride ?? getDefaultTools(modelName),
+        stopWhen: stepCountIs(10),
+      });
+
+      let accumulated = "";
+      for await (const chunk of streamResult.textStream) {
+        accumulated += chunk;
+        callbacks?.onChunk(accumulated);
+      }
+
+      const steps = await streamResult.steps;
+      const text = await streamResult.text;
+      const toolCalls = steps
+        .flatMap((step) => step.toolCalls)
+        .map((tc) => ({ name: tc.toolName, input: tc.input }));
+
+      return {
+        content: text,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      };
     },
-    stopWhen: stepCountIs(10),
   });
 
-  let accumulated = "";
-  for await (const chunk of result.textStream) {
-    accumulated += chunk;
-    callbacks?.onChunk(accumulated);
-  }
-
-  const steps = await result.steps;
-  const text = await result.text;
-  const toolCalls = steps
-    .flatMap((step) => step.toolCalls)
-    .map((tc) => ({ name: tc.toolName, input: tc.input }));
-
-  return {
-    content: text,
-    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-  };
+  return { ...result, modelUsed };
 }

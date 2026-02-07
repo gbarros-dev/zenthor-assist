@@ -1,6 +1,18 @@
+import { createGateway } from "@ai-sdk/gateway";
+import { api } from "@zenthor-assist/backend/convex/_generated/api";
+import { env } from "@zenthor-assist/env/agent";
 import { generateText } from "ai";
 
-import { model } from "./generate";
+import { getConvexClient } from "../convex/client";
+import {
+  DEFAULT_CONTEXT_WINDOW,
+  estimateMessagesTokens,
+  estimateTokens,
+  evaluateContext,
+} from "./context-guard";
+import { generateEmbedding } from "./tools/embed";
+
+const gateway = createGateway({ apiKey: env.AI_GATEWAY_API_KEY });
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -8,35 +20,155 @@ interface Message {
 }
 
 const COMPACTION_THRESHOLD = 50;
-const RECENT_MESSAGES_COUNT = 20;
+const SUMMARIZER_SYSTEM =
+  "You are a conversation summarizer. Summarize the following conversation into a concise paragraph that preserves key facts, decisions, and context. Start with '[Conversation Summary]'.";
 
-export async function compactMessages(
-  messages: Message[],
-): Promise<{ messages: Message[]; summary?: string }> {
-  if (messages.length <= COMPACTION_THRESHOLD) {
-    return { messages };
+function splitByTokenBudget(messages: Message[], budgetPerChunk: number): Message[][] {
+  const chunks: Message[][] = [];
+  let current: Message[] = [];
+  let currentTokens = 0;
+
+  for (const msg of messages) {
+    const msgTokens = estimateTokens(msg.content) + 4;
+    if (current.length > 0 && currentTokens + msgTokens > budgetPerChunk) {
+      chunks.push(current);
+      current = [];
+      currentTokens = 0;
+    }
+    current.push(msg);
+    currentTokens += msgTokens;
   }
 
-  const splitIndex = messages.length - RECENT_MESSAGES_COUNT;
-  const oldMessages = messages.slice(0, splitIndex);
-  const recentMessages = messages.slice(splitIndex);
+  if (current.length > 0) {
+    chunks.push(current);
+  }
 
-  const oldContent = oldMessages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+  return chunks;
+}
+
+function findRecentSplitByBudget(messages: Message[], recentBudget: number): number {
+  let tokens = 0;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i]!;
+    tokens += estimateTokens(msg.content) + 4;
+    if (tokens > recentBudget) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
+
+async function summarizeChunk(chunk: Message[]): Promise<string> {
+  const content = chunk.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+  const model = gateway(env.AI_MODEL);
 
   const result = await generateText({
     model,
-    system:
-      "You are a conversation summarizer. Summarize the following conversation into a concise paragraph that preserves key facts, decisions, and context. Start with '[Conversation Summary]'.",
-    messages: [{ role: "user", content: oldContent }],
+    system: SUMMARIZER_SYSTEM,
+    messages: [{ role: "user", content }],
   });
+
+  return result.text;
+}
+
+async function summarizeWithFallback(chunks: Message[][]): Promise<string> {
+  // Try full summary of all chunks
+  try {
+    const chunkSummaries = await Promise.all(chunks.map(summarizeChunk));
+
+    if (chunkSummaries.length === 1) {
+      return chunkSummaries[0]!;
+    }
+
+    // Merge multiple summaries into one
+    const model = gateway(env.AI_MODEL);
+    const merged = await generateText({
+      model,
+      system: SUMMARIZER_SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: `Merge these summaries into one:\n\n${chunkSummaries.join("\n\n---\n\n")}`,
+        },
+      ],
+    });
+
+    return merged.text;
+  } catch {
+    // Fallback: metadata-only note
+    const totalMessages = chunks.reduce((sum, c) => sum + c.length, 0);
+    return `[Conversation Summary] Previous conversation contained ${totalMessages} messages. Context was truncated for continuity.`;
+  }
+}
+
+export async function compactMessages(
+  messages: Message[],
+  contextWindow?: number,
+): Promise<{ messages: Message[]; summary?: string }> {
+  const maxContext = contextWindow ?? DEFAULT_CONTEXT_WINDOW;
+  const guard = evaluateContext(messages, maxContext);
+
+  // Trigger compaction if token-based threshold OR message count threshold
+  if (!guard.shouldCompact && messages.length <= COMPACTION_THRESHOLD) {
+    return { messages };
+  }
+
+  // Keep recent messages by token budget (last 30% of context)
+  const recentBudget = Math.floor(maxContext * 0.3);
+  const splitIndex = findRecentSplitByBudget(messages, recentBudget);
+
+  // Ensure we keep at least some messages and have something to summarize
+  const effectiveSplit = Math.max(1, Math.min(splitIndex, messages.length - 1));
+  const oldMessages = messages.slice(0, effectiveSplit);
+  const recentMessages = messages.slice(effectiveSplit);
+
+  if (oldMessages.length === 0) {
+    return { messages };
+  }
+
+  // Split old messages into token-budget chunks (each ≤ 40% of context window)
+  const chunkBudget = Math.floor(maxContext * 0.4);
+  const chunks = splitByTokenBudget(oldMessages, chunkBudget);
+
+  const summaryText = await summarizeWithFallback(chunks);
+
+  // Auto-store compaction summary as memory
+  try {
+    const embedding = await generateEmbedding(summaryText);
+    const client = getConvexClient();
+    await client.action(api.memories.store, {
+      content: summaryText,
+      embedding,
+      source: "conversation" as const,
+    });
+  } catch {
+    // Non-critical: don't fail compaction if memory storage fails
+    console.warn("[compact] Failed to store compaction summary as memory");
+  }
 
   const summaryMessage: Message = {
     role: "system",
-    content: result.text,
+    content: summaryText,
   };
 
+  // If after compaction we're still over budget, keep trimming recent messages
+  let finalRecent = recentMessages;
+  const summaryTokens = estimateTokens(summaryText) + 4;
+  const recentTokens = estimateMessagesTokens(finalRecent);
+
+  if (summaryTokens + recentTokens > maxContext * 0.9) {
+    // Trim oldest recent messages until we fit
+    let currentTokens = recentTokens;
+    let trimIndex = 0;
+    while (trimIndex < finalRecent.length - 1 && summaryTokens + currentTokens > maxContext * 0.9) {
+      currentTokens -= estimateTokens(finalRecent[trimIndex]!.content) + 4;
+      trimIndex++;
+    }
+    finalRecent = finalRecent.slice(trimIndex);
+  }
+
   return {
-    messages: [summaryMessage, ...recentMessages],
-    summary: result.text,
+    messages: [summaryMessage, ...finalRecent],
+    summary: summaryText,
   };
 }

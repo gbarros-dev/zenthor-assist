@@ -13,6 +13,10 @@
       "command": "npx",
       "args": ["@railway/mcp-server"],
       "env": {}
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["-y", "shadcn@latest", "mcp"]
     }
   }
 }

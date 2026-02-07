@@ -3,6 +3,16 @@
     "linear-server": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp"
+    },
+    "axiom": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.axiom.co/mcp"]
+    },
+    "Railway": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@railway/mcp-server"],
+      "env": {}
     }
   }
 }

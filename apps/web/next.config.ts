@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: "top-right",
   },
+  allowedDevOrigins: ["127.0.0.1"],
 };
 
 export default nextConfig;

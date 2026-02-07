@@ -1,6 +1,17 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+
+const conversationDoc = v.object({
+  _id: v.id("conversations"),
+  _creationTime: v.number(),
+  channel: v.union(v.literal("whatsapp"), v.literal("web")),
+  userId: v.optional(v.id("users")),
+  contactId: v.optional(v.id("contacts")),
+  agentId: v.optional(v.id("agents")),
+  title: v.optional(v.string()),
+  status: v.union(v.literal("active"), v.literal("archived")),
+});
 
 export const getOrCreate = mutation({
   args: {
@@ -9,6 +20,7 @@ export const getOrCreate = mutation({
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
     agentId: v.optional(v.id("agents")),
   },
+  returns: v.id("conversations"),
   handler: async (ctx, args) => {
     if (args.channel === "web" && args.userId) {
       const existing = await ctx.db
@@ -46,12 +58,13 @@ export const getOrCreate = mutation({
       });
     }
 
-    throw new Error("Must provide userId for web or contactId for whatsapp");
+    throw new ConvexError("Must provide userId for web or contactId for whatsapp");
   },
 });
 
 export const listByUser = query({
   args: { userId: v.id("users") },
+  returns: v.array(conversationDoc),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("conversations")
@@ -62,6 +75,7 @@ export const listByUser = query({
 
 export const listByContact = query({
   args: { contactId: v.id("contacts") },
+  returns: v.array(conversationDoc),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("conversations")
@@ -72,6 +86,7 @@ export const listByContact = query({
 
 export const get = query({
   args: { id: v.id("conversations") },
+  returns: v.union(conversationDoc, v.null()),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
   },
@@ -82,6 +97,7 @@ export const create = mutation({
     userId: v.id("users"),
     title: v.optional(v.string()),
   },
+  returns: v.id("conversations"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("conversations", {
       userId: args.userId,
@@ -94,10 +110,11 @@ export const create = mutation({
 
 export const archive = mutation({
   args: { id: v.id("conversations") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const conv = await ctx.db.get(args.id);
-    if (!conv) throw new Error("Conversation not found");
-    if (conv.channel === "whatsapp") throw new Error("Cannot archive WhatsApp conversations");
+    if (!conv) throw new ConvexError("Conversation not found");
+    if (conv.channel === "whatsapp") throw new ConvexError("Cannot archive WhatsApp conversations");
     await ctx.db.patch(args.id, { status: "archived" });
   },
 });
@@ -107,6 +124,7 @@ export const updateTitle = mutation({
     id: v.id("conversations"),
     title: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, { title: args.title });
   },
@@ -114,6 +132,26 @@ export const updateTitle = mutation({
 
 export const listRecentWithLastMessage = query({
   args: { userId: v.id("users") },
+  returns: v.array(
+    v.object({
+      _id: v.id("conversations"),
+      _creationTime: v.number(),
+      channel: v.union(v.literal("whatsapp"), v.literal("web")),
+      userId: v.optional(v.id("users")),
+      contactId: v.optional(v.id("contacts")),
+      agentId: v.optional(v.id("agents")),
+      title: v.optional(v.string()),
+      status: v.union(v.literal("active"), v.literal("archived")),
+      lastMessage: v.union(
+        v.object({
+          content: v.string(),
+          role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
+          createdAt: v.number(),
+        }),
+        v.null(),
+      ),
+    }),
+  ),
   handler: async (ctx, args) => {
     const conversations = await ctx.db
       .query("conversations")

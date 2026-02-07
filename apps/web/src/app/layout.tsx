@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 
@@ -33,11 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={notoSans.variable} suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClerkProvider signInUrl="/sign-in" afterSignInUrl="/" afterSignUpUrl="/">
-          <Providers>
-            <div className="flex h-svh flex-col overflow-hidden">{children}</div>
-          </Providers>
-        </ClerkProvider>
+        <Providers>
+          <div className="flex h-svh flex-col overflow-hidden">{children}</div>
+        </Providers>
       </body>
     </html>
   );

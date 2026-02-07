@@ -17,6 +17,7 @@ import {
 } from "./plugins/loader";
 import { wrapToolsWithApproval } from "./tool-approval";
 import { filterTools, getDefaultPolicy, mergeToolPolicies } from "./tool-policy";
+import { createScheduleTask } from "./tools/schedule";
 
 /** Convert any remaining markdown syntax to WhatsApp-compatible formatting */
 function sanitizeForWhatsApp(text: string): string {
@@ -206,6 +207,11 @@ export function startAgentLoop() {
           agentId: context.conversation.agentId ?? undefined,
           modelName: env.AI_MODEL,
         });
+
+        // Bind schedule_task to this conversation so cron can trigger follow-ups
+        if (pluginTools.tools.schedule_task) {
+          pluginTools.tools.schedule_task = createScheduleTask(job.conversationId);
+        }
 
         // Build channel-aware tool policy
         const channelPolicy = getDefaultPolicy(channel);

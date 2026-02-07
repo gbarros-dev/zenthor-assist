@@ -2,7 +2,7 @@ import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import type { WAMessage } from "baileys";
 
 import { getConvexClient } from "../convex/client";
-import { logger } from "../observability/logger";
+import { logger, typedEvent } from "../observability/logger";
 
 export async function handleIncomingMessage(message: WAMessage) {
   const client = getConvexClient();
@@ -15,12 +15,32 @@ export async function handleIncomingMessage(message: WAMessage) {
   if (!text) return;
 
   const phone = jid.replace("@s.whatsapp.net", "");
-  console.info(`[whatsapp] Incoming from ${phone}: ${text.substring(0, 50)}...`);
-  void logger.info("whatsapp.inbound.received", {
+  void logger.lineInfo(`[whatsapp] Incoming from ${phone}: ${text.substring(0, 50)}...`);
+  typedEvent.info("whatsapp.inbound.received", {
     phone,
     jid,
     messageLength: text.length,
   });
+
+  // Dedupe inbound messages to prevent duplicate processing from provider retries
+  const channelMessageId = message.key.id;
+  if (channelMessageId) {
+    const { isDuplicate } = await client.mutation(api.inboundDedupe.checkAndRegister, {
+      channel: "whatsapp",
+      channelMessageId,
+    });
+
+    if (isDuplicate) {
+      void logger.lineInfo(
+        `[whatsapp] Skipping duplicate message ${channelMessageId} from ${phone}`,
+      );
+      typedEvent.info("whatsapp.inbound.dedupe_skipped", {
+        phone,
+        channelMessageId,
+      });
+      return;
+    }
+  }
 
   let contact = await client.query(api.contacts.getByPhone, { phone });
 
@@ -34,8 +54,8 @@ export async function handleIncomingMessage(message: WAMessage) {
   }
 
   if (!contact || !contact.isAllowed) {
-    console.info(`[whatsapp] Ignoring message from non-allowed contact: ${phone}`);
-    void logger.warn("whatsapp.inbound.ignored_not_allowed", { phone });
+    void logger.lineInfo(`[whatsapp] Ignoring message from non-allowed contact: ${phone}`);
+    typedEvent.warn("whatsapp.inbound.ignored_not_allowed", { phone });
     return;
   }
 
@@ -60,14 +80,14 @@ export async function handleIncomingMessage(message: WAMessage) {
         approvalId: pendingApprovals[0]!._id,
         status,
       });
-      console.info(
+      void logger.lineInfo(
         `[whatsapp] Tool approval ${status} by ${phone} for approval ${pendingApprovals[0]!._id}`,
       );
-      void logger.info("agent.tool.approval.resolved_whatsapp", {
+      typedEvent.info("agent.tool.approval.resolved_whatsapp", {
         approvalId: pendingApprovals[0]!._id,
-        status,
-        phone,
         conversationId,
+        status,
+        channel: "whatsapp",
       });
       return;
     }
@@ -79,8 +99,8 @@ export async function handleIncomingMessage(message: WAMessage) {
     channel: "whatsapp",
   });
 
-  console.info(`[whatsapp] Queued message from ${phone} for processing`);
-  void logger.info("whatsapp.inbound.queued", {
+  void logger.lineInfo(`[whatsapp] Queued message from ${phone} for processing`);
+  typedEvent.info("whatsapp.inbound.queued", {
     phone,
     conversationId,
   });

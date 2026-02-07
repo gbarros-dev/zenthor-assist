@@ -1,43 +1,65 @@
+import { env } from "@zenthor-assist/env/agent";
 import makeWASocket, {
   DisconnectReason,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
-  useMultiFileAuthState as loadAuthState,
+  useMultiFileAuthState as loadLocalAuthState,
 } from "baileys";
 
+import { logger as appLogger, typedEvent } from "../observability/logger";
+import { createConvexAuthState } from "./convex-auth-state";
 import { handleIncomingMessage } from "./handler";
 import { setWhatsAppSocket } from "./sender";
 
-const AUTH_DIR = ".whatsapp-auth";
+const LOCAL_AUTH_DIR = ".whatsapp-auth";
 
-const logger = {
+const baileysLogger = {
   level: "warn",
   child() {
-    return logger;
+    return baileysLogger;
   },
   trace() {},
   debug() {},
   info() {},
   warn(obj: unknown, msg?: string) {
-    console.warn("[baileys]", msg || obj);
+    void appLogger.lineWarn(`[baileys] ${msg || obj}`);
+    typedEvent.warn("whatsapp.baileys.warning", {
+      message: msg || String(obj),
+    });
   },
   error(obj: unknown, msg?: string) {
-    console.error("[baileys]", msg || obj);
+    void appLogger.lineError(`[baileys] ${msg || obj}`);
+    typedEvent.error("whatsapp.baileys.error", {
+      message: msg || String(obj),
+    });
   },
 } as never;
+
+async function loadWhatsAppAuth() {
+  const mode = env.WHATSAPP_AUTH_MODE;
+  void appLogger.lineInfo(`[whatsapp] Auth mode: ${mode}`);
+  typedEvent.info("whatsapp.auth.mode_selected", { mode });
+
+  if (mode === "convex") {
+    return createConvexAuthState();
+  }
+
+  return loadLocalAuthState(LOCAL_AUTH_DIR);
+}
 
 export async function startWhatsApp(options?: { enableIngress?: boolean }) {
   const enableIngress = options?.enableIngress ?? true;
   const { version } = await fetchLatestBaileysVersion();
-  console.info(`[whatsapp] Using Baileys version ${version.join(".")}`);
+  void appLogger.lineInfo(`[whatsapp] Using Baileys version ${version.join(".")}`);
+  typedEvent.info("whatsapp.baileys.version", { version: version.join(".") });
 
-  const { state, saveCreds } = await loadAuthState(AUTH_DIR);
+  const { state, saveCreds } = await loadWhatsAppAuth();
 
   const sock = makeWASocket({
     version,
     auth: {
       creds: state.creds,
-      keys: makeCacheableSignalKeyStore(state.keys, logger),
+      keys: makeCacheableSignalKeyStore(state.keys, baileysLogger),
     },
     printQRInTerminal: true,
     generateHighQualityLinkPreview: false,
@@ -54,21 +76,24 @@ export async function startWhatsApp(options?: { enableIngress?: boolean }) {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.info("[whatsapp] QR code printed above — scan with WhatsApp");
+      void appLogger.lineInfo("[whatsapp] QR code printed above — scan with WhatsApp");
+      typedEvent.info("whatsapp.qr.available", {});
     }
 
     if (connection === "close") {
       const error = lastDisconnect?.error as { output?: { statusCode?: number } } | undefined;
       const statusCode = error?.output?.statusCode;
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      console.info(
+      void appLogger.lineInfo(
         `[whatsapp] Connection closed (status: ${statusCode}), reconnecting: ${shouldReconnect}`,
       );
+      typedEvent.info("whatsapp.connection.closed", { statusCode, shouldReconnect });
       if (shouldReconnect) {
         startWhatsApp(options);
       }
     } else if (connection === "open") {
-      console.info("[whatsapp] Connected successfully");
+      void appLogger.lineInfo("[whatsapp] Connected successfully");
+      typedEvent.info("whatsapp.connection.established", {});
     }
   });
 
@@ -78,12 +103,16 @@ export async function startWhatsApp(options?: { enableIngress?: boolean }) {
         try {
           await handleIncomingMessage(msg);
         } catch (error) {
-          console.error("[whatsapp] Error handling message:", error);
+          void appLogger.lineError(
+            `[whatsapp] Error handling message: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          void appLogger.exception("whatsapp.message.handling_error", error);
         }
       }
     });
   } else {
-    console.info("[whatsapp] Ingress listener disabled for this runtime");
+    void appLogger.lineInfo("[whatsapp] Ingress listener disabled for this runtime");
+    typedEvent.info("whatsapp.ingress.disabled", {});
   }
 
   return sock;

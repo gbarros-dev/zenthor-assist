@@ -2,7 +2,7 @@ import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import { env } from "@zenthor-assist/env/agent";
 
 import { getConvexClient } from "../convex/client";
-import { logger } from "../observability/logger";
+import { logger, typedEvent } from "../observability/logger";
 import { startWhatsApp } from "./connection";
 import { sendWhatsAppMessage } from "./sender";
 
@@ -25,8 +25,8 @@ async function acquireLease(accountId: string, ownerId: string): Promise<void> {
       ttlMs: env.WHATSAPP_LEASE_TTL_MS,
     });
     if (lease.acquired) {
-      console.info(`[whatsapp] Lease acquired for account '${accountId}' by '${ownerId}'`);
-      void logger.info("whatsapp.lease.acquire.success", {
+      void logger.lineInfo(`[whatsapp] Lease acquired for account '${accountId}' by '${ownerId}'`);
+      typedEvent.info("whatsapp.lease.acquire.success", {
         accountId,
         ownerId,
         expiresAt: lease.expiresAt,
@@ -34,13 +34,13 @@ async function acquireLease(accountId: string, ownerId: string): Promise<void> {
       return;
     }
 
-    console.info(
+    void logger.lineInfo(
       `[whatsapp] Lease held by '${lease.ownerId ?? "unknown"}' for account '${accountId}', retrying...`,
     );
-    void logger.warn("whatsapp.lease.acquire.contended", {
+    typedEvent.warn("whatsapp.lease.acquire.contended", {
       accountId,
       ownerId,
-      currentOwnerId: lease.ownerId,
+      currentOwnerId: lease.ownerId ?? "unknown",
       expiresAt: lease.expiresAt,
     });
     await sleep(3_000);
@@ -49,7 +49,8 @@ async function acquireLease(accountId: string, ownerId: string): Promise<void> {
 
 async function startOutboundLoop(accountId: string, ownerId: string): Promise<void> {
   const client = getConvexClient();
-  console.info("[whatsapp] Starting outbound delivery loop...");
+  void logger.lineInfo("[whatsapp] Starting outbound delivery loop...");
+  typedEvent.info("whatsapp.outbound.loop.started", { accountId, ownerId });
 
   while (true) {
     try {
@@ -85,8 +86,10 @@ async function startOutboundLoop(accountId: string, ownerId: string): Promise<vo
         });
       }
     } catch (error) {
-      console.error("[whatsapp] Outbound loop error:", error);
-      void logger.exception("whatsapp.outbound.loop.error", error, {
+      void logger.lineError(
+        `[whatsapp] Outbound loop error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      typedEvent.exception("whatsapp.outbound.loop.error", error, {
         accountId,
         ownerId,
       });
@@ -119,18 +122,20 @@ export async function startWhatsAppRuntime(options: WhatsAppRuntimeOptions): Pro
       })
       .then((ok) => {
         if (!ok) {
-          console.error(
+          void logger.lineError(
             `[whatsapp] Lease heartbeat lost for account '${accountId}' (owner '${ownerId}')`,
           );
-          void logger.error("whatsapp.lease.heartbeat.lost", {
+          typedEvent.error("whatsapp.lease.heartbeat.lost", {
             accountId,
             ownerId,
           });
         }
       })
       .catch((error) => {
-        console.error("[whatsapp] Lease heartbeat error:", error);
-        void logger.exception("whatsapp.lease.heartbeat.error", error, {
+        void logger.lineError(
+          `[whatsapp] Lease heartbeat error: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        typedEvent.exception("whatsapp.lease.heartbeat.error", error, {
           accountId,
           ownerId,
         });
@@ -143,7 +148,7 @@ export async function startWhatsAppRuntime(options: WhatsAppRuntimeOptions): Pro
         accountId,
         ownerId,
       });
-      void logger.info("whatsapp.lease.released", { accountId, ownerId });
+      typedEvent.info("whatsapp.lease.released", { accountId, ownerId });
     } catch {}
   };
 

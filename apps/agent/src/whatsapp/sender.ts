@@ -1,6 +1,6 @@
 import type { WASocket } from "baileys";
 
-import { logger } from "../observability/logger";
+import { logger, typedEvent } from "../observability/logger";
 
 let socket: WASocket | null = null;
 
@@ -15,8 +15,8 @@ export async function sendWhatsAppMessage(phone: string, text: string) {
 
   const jid = `${phone}@s.whatsapp.net`;
   await socket.sendMessage(jid, { text });
-  console.info(`[whatsapp] Sent message to ${phone}`);
-  void logger.info("whatsapp.outbound.sent", {
+  void logger.lineInfo(`[whatsapp] Sent message to ${phone}`);
+  typedEvent.info("whatsapp.outbound.sent", {
     phone,
     jid,
     messageLength: text.length,

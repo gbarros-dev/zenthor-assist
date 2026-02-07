@@ -29,6 +29,7 @@
     "**/routeTree.gen.ts",
     "apps/web-old",
     "**/.auth",
+    "**/.whatsapp-auth",
     "**/test-results",
     "**/playwright-report"
   ]

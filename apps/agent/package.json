@@ -31,13 +31,14 @@
     "typescript": "catalog:"
   },
   "knip": {
+    "ignore": [
+      "src/**/*.test.ts"
+    ],
     "ignoreBinaries": [
       "oxlint",
       "oxfmt",
       "knip"
     ],
-    "ignoreDependencies": [
-      "@zenthor-assist/backend"
-    ]
+    "ignoreDependencies": []
   }
 }

@@ -37,8 +37,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     description: v.optional(v.string()),
-    cronExpression: v.optional(v.string()),
-    intervalMs: v.optional(v.number()),
+    intervalMs: v.number(),
     payload: v.any(),
     enabled: v.boolean(),
     conversationId: v.optional(v.id("conversations")),
@@ -46,11 +45,10 @@ export const create = mutation({
   returns: v.id("scheduledTasks"),
   handler: async (ctx, args) => {
     const now = Date.now();
-    const nextRunAt = args.intervalMs ? now + args.intervalMs : undefined;
     return await ctx.db.insert("scheduledTasks", {
       ...args,
       createdAt: now,
-      nextRunAt,
+      nextRunAt: now + args.intervalMs,
     });
   },
 });
@@ -60,7 +58,6 @@ export const update = mutation({
     id: v.id("scheduledTasks"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    cronExpression: v.optional(v.string()),
     intervalMs: v.optional(v.number()),
     payload: v.optional(v.any()),
     enabled: v.optional(v.boolean()),

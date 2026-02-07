@@ -4,6 +4,7 @@ import { mutation, query } from "./_generated/server";
 
 export const get = query({
   args: { key: v.string() },
+  returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
     const doc = await ctx.db
       .query("whatsappSession")
@@ -15,6 +16,7 @@ export const get = query({
 
 export const set = mutation({
   args: { key: v.string(), data: v.string() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("whatsappSession")
@@ -34,6 +36,7 @@ export const set = mutation({
 
 export const remove = mutation({
   args: { key: v.string() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("whatsappSession")
@@ -48,6 +51,14 @@ export const remove = mutation({
 
 export const getAll = query({
   args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("whatsappSession"),
+      _creationTime: v.number(),
+      key: v.string(),
+      data: v.string(),
+    }),
+  ),
   handler: async (ctx) => {
     return await ctx.db.query("whatsappSession").collect();
   },
@@ -55,6 +66,7 @@ export const getAll = query({
 
 export const clearAll = mutation({
   args: {},
+  returns: v.number(),
   handler: async (ctx) => {
     const all = await ctx.db.query("whatsappSession").collect();
     for (const doc of all) {

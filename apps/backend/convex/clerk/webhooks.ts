@@ -9,6 +9,10 @@ export const handleUserCreated = internalMutation({
     email: v.string(),
     image: v.optional(v.string()),
   },
+  returns: v.object({
+    userId: v.id("users"),
+    created: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("users")
@@ -47,6 +51,9 @@ export const handleUserUpdated = internalMutation({
     email: v.string(),
     image: v.optional(v.string()),
   },
+  returns: v.object({
+    userId: v.id("users"),
+  }),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("users")
@@ -83,6 +90,7 @@ export const handleUserDeleted = internalMutation({
   args: {
     externalId: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("users")

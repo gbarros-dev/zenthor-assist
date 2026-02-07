@@ -2,12 +2,30 @@ import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 
+const messageDoc = v.object({
+  _id: v.id("messages"),
+  _creationTime: v.number(),
+  conversationId: v.id("conversations"),
+  role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
+  content: v.string(),
+  channel: v.union(v.literal("whatsapp"), v.literal("web")),
+  toolCalls: v.optional(v.any()),
+  streaming: v.optional(v.boolean()),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("sent"),
+    v.literal("delivered"),
+    v.literal("failed"),
+  ),
+});
+
 export const send = mutation({
   args: {
     conversationId: v.id("conversations"),
     content: v.string(),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
   },
+  returns: v.id("messages"),
   handler: async (ctx, args) => {
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -40,6 +58,7 @@ export const addAssistantMessage = mutation({
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
     toolCalls: v.optional(v.any()),
   },
+  returns: v.id("messages"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -58,6 +77,7 @@ export const addSummaryMessage = mutation({
     content: v.string(),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
   },
+  returns: v.id("messages"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -74,6 +94,7 @@ export const createPlaceholder = mutation({
     conversationId: v.id("conversations"),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
   },
+  returns: v.id("messages"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -91,6 +112,7 @@ export const updateStreamingContent = mutation({
     messageId: v.id("messages"),
     content: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.patch(args.messageId, { content: args.content });
   },
@@ -102,6 +124,7 @@ export const finalizeMessage = mutation({
     content: v.string(),
     toolCalls: v.optional(v.any()),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.patch(args.messageId, {
       content: args.content,
@@ -114,6 +137,7 @@ export const finalizeMessage = mutation({
 
 export const listByConversation = query({
   args: { conversationId: v.id("conversations") },
+  returns: v.array(messageDoc),
   handler: async (ctx, args) => {
     return await ctx.db
       .query("messages")
@@ -124,6 +148,7 @@ export const listByConversation = query({
 
 export const get = query({
   args: { id: v.id("messages") },
+  returns: v.union(messageDoc, v.null()),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
   },

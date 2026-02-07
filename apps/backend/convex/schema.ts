@@ -71,6 +71,24 @@ export default defineSchema({
     data: v.string(),
   }).index("by_key", ["key"]),
 
+  whatsappAccounts: defineTable({
+    accountId: v.string(),
+    phone: v.string(),
+    enabled: v.boolean(),
+    meta: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_accountId", ["accountId"]),
+
+  whatsappLeases: defineTable({
+    accountId: v.string(),
+    ownerId: v.string(),
+    expiresAt: v.number(),
+    heartbeatAt: v.number(),
+  })
+    .index("by_accountId", ["accountId"])
+    .index("by_ownerId", ["ownerId"]),
+
   agentQueue: defineTable({
     messageId: v.id("messages"),
     conversationId: v.id("conversations"),
@@ -147,4 +165,64 @@ export default defineSchema({
   })
     .index("by_jobId", ["jobId"])
     .index("by_conversationId_status", ["conversationId", "status"]),
+
+  outboundMessages: defineTable({
+    channel: v.union(v.literal("web"), v.literal("whatsapp")),
+    accountId: v.optional(v.string()),
+    conversationId: v.id("conversations"),
+    messageId: v.id("messages"),
+    to: v.optional(v.string()),
+    payload: v.object({
+      content: v.string(),
+      metadata: v.optional(v.any()),
+    }),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("sent"),
+      v.literal("failed"),
+    ),
+    processorId: v.optional(v.string()),
+    lockedUntil: v.optional(v.number()),
+    attemptCount: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status_accountId", ["status", "accountId"])
+    .index("by_conversationId", ["conversationId"]),
+
+  pluginDefinitions: defineTable({
+    name: v.string(),
+    version: v.string(),
+    source: v.string(),
+    status: v.union(v.literal("active"), v.literal("inactive")),
+    manifest: v.any(),
+    checksum: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  pluginInstalls: defineTable({
+    workspaceScope: v.string(),
+    agentId: v.optional(v.id("agents")),
+    channel: v.optional(v.union(v.literal("web"), v.literal("whatsapp"))),
+    pluginName: v.string(),
+    enabled: v.boolean(),
+    config: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_scope_agent_channel", ["workspaceScope", "agentId", "channel"])
+    .index("by_pluginName", ["pluginName"]),
+
+  pluginPolicies: defineTable({
+    workspaceScope: v.string(),
+    agentId: v.optional(v.id("agents")),
+    channel: v.optional(v.union(v.literal("web"), v.literal("whatsapp"))),
+    allow: v.optional(v.array(v.string())),
+    deny: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_scope_agent_channel", ["workspaceScope", "agentId", "channel"]),
 });

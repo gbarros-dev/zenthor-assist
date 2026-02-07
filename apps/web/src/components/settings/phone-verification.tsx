@@ -120,15 +120,15 @@ export function PhoneVerification() {
             <CheckCircle className="size-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-medium">WhatsApp linked</h3>
-            <p className="text-muted-foreground text-sm">+{phone}</p>
+            <h3 className="text-base font-medium">WhatsApp linked</h3>
+            <p className="text-muted-foreground text-base">+{phone}</p>
           </div>
           <Button variant="outline" size="sm" onClick={handleUnlink} disabled={loading}>
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Unlink className="size-4" />}
             Unlink
           </Button>
         </div>
-        <p className="text-muted-foreground mt-3 text-xs">
+        <p className="text-muted-foreground mt-3 text-base">
           Your WhatsApp conversations appear in the sidebar.
         </p>
       </div>
@@ -144,8 +144,8 @@ export function PhoneVerification() {
             <Phone className="text-muted-foreground size-5" />
           </div>
           <div>
-            <h3 className="text-sm font-medium">Verify your phone</h3>
-            <p className="text-muted-foreground text-sm">
+            <h3 className="text-base font-medium">Verify your phone</h3>
+            <p className="text-muted-foreground text-base">
               Code sent to +{pendingVerification.phone}
             </p>
           </div>
@@ -185,8 +185,8 @@ export function PhoneVerification() {
           <Phone className="text-muted-foreground size-5" />
         </div>
         <div>
-          <h3 className="text-sm font-medium">Link WhatsApp</h3>
-          <p className="text-muted-foreground text-sm">
+          <h3 className="text-base font-medium">Link WhatsApp</h3>
+          <p className="text-muted-foreground text-base">
             Verify your phone to see WhatsApp conversations here.
           </p>
         </div>

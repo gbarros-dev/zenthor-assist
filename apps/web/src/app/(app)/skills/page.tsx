@@ -61,7 +61,7 @@ export default function SkillsPage() {
         {skills.length === 0 ? (
           <div className="bg-muted/50 flex flex-col items-center justify-center gap-2 rounded-xl py-12">
             <Sparkles className="text-muted-foreground size-8" />
-            <p className="text-muted-foreground text-sm">No skills configured yet</p>
+            <p className="text-muted-foreground text-base">No skills configured yet</p>
             <Button variant="outline" size="sm" className="mt-2" onClick={handleAdd}>
               Create your first skill
             </Button>
@@ -71,8 +71,8 @@ export default function SkillsPage() {
             {skills.map((skill) => (
               <div key={skill._id} className="flex items-start gap-4 px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{skill.name}</p>
-                  <p className="text-muted-foreground text-xs">{skill.description}</p>
+                  <p className="text-base font-medium">{skill.name}</p>
+                  <p className="text-muted-foreground text-base">{skill.description}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Switch

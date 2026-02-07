@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import {
   Archive,
   ArrowLeft,
-  LayoutDashboard,
+  House,
   MessageCircle,
   MessageSquare,
   Plus,
@@ -92,9 +92,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center">
                   <ZenthorMark className="size-4" />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-base leading-tight">
                   <span className="truncate font-semibold">Zenthor</span>
-                  <span className="truncate text-xs">Assist</span>
+                  <span className="truncate text-base">Assist</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -106,10 +106,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroup>
             <SidebarMenu className="gap-2">
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard">
-                  <Link href={"/dashboard" as "/"}>
-                    <LayoutDashboard />
-                    <span>Dashboard</span>
+                <SidebarMenuButton asChild isActive={pathname === "/home"} tooltip="Home">
+                  <Link href={"/home" as "/"}>
+                    <House />
+                    <span>Home</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -147,7 +147,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Button variant="ghost" size="icon-sm" onClick={() => setMode("nav")}>
                 <ArrowLeft className="size-4" />
               </Button>
-              <span className="flex-1 text-sm font-semibold">Chats</span>
+              <span className="flex-1 text-base font-semibold">Chats</span>
               <Button variant="ghost" size="icon-sm" onClick={handleNewChat}>
                 <Plus className="size-4" />
               </Button>
@@ -189,7 +189,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   );
                 })}
                 {conversations?.length === 0 && (
-                  <div className="text-muted-foreground px-4 py-6 text-center text-xs">
+                  <div className="text-muted-foreground px-4 py-6 text-center text-base">
                     No conversations yet
                   </div>
                 )}

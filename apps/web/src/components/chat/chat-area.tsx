@@ -93,13 +93,13 @@ function ApprovalCard({
           {approval.toolName}
         </AlertDescription>
         {displayStatus === "approved" && (
-          <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+          <span className="flex items-center gap-1 text-base text-green-600 dark:text-green-400">
             <Check className="size-3" />
             Approved
           </span>
         )}
         {displayStatus === "rejected" && (
-          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+          <span className="flex items-center gap-1 text-base text-red-600 dark:text-red-400">
             <X className="size-3" />
             Rejected
           </span>

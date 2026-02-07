@@ -29,7 +29,7 @@ export default function ChatPage() {
       </header>
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <MessageSquare className="text-muted-foreground size-12" />
-        <p className="text-muted-foreground text-sm">No conversation selected</p>
+        <p className="text-muted-foreground text-base">No conversation selected</p>
         <Button onClick={handleNewChat}>
           <Plus className="size-4" />
           Start a new chat

@@ -88,7 +88,7 @@ export default function GlobalError({
               </div>
 
               <p
-                className="animate-fade-up text-primary/80 text-xs font-semibold tracking-[0.35em] uppercase"
+                className="animate-fade-up text-primary/80 text-base font-semibold tracking-[0.35em] uppercase"
                 style={{ animationDelay: "0.2s" }}
               >
                 system error
@@ -100,7 +100,7 @@ export default function GlobalError({
                 Something slipped out of sync.
               </h1>
               <p
-                className="animate-fade-up text-muted-foreground mt-4 max-w-md text-sm leading-relaxed md:text-base"
+                className="animate-fade-up text-muted-foreground mt-4 max-w-md text-base leading-relaxed md:text-base"
                 style={{ animationDelay: "0.4s" }}
               >
                 Zenthor hit an unexpected snag while loading this view. Reset the connection or head
@@ -116,19 +116,19 @@ export default function GlobalError({
                     <AlertTriangle className="size-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Unexpected error</p>
-                    <p className="text-muted-foreground text-xs leading-relaxed">
+                    <p className="text-base font-semibold">Unexpected error</p>
+                    <p className="text-muted-foreground text-base leading-relaxed">
                       We couldn&apos;t complete that request.
                     </p>
                   </div>
                 </div>
                 {isDev ? (
-                  <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+                  <p className="text-muted-foreground mt-3 text-base leading-relaxed">
                     {error.message || "No error message available."}
                   </p>
                 ) : null}
                 {error.digest ? (
-                  <p className="text-muted-foreground mt-2 text-xs">Reference: {error.digest}</p>
+                  <p className="text-muted-foreground mt-2 text-base">Reference: {error.digest}</p>
                 ) : null}
               </div>
 

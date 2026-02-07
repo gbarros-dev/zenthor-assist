@@ -1,7 +1,7 @@
 "use client";
 
 import { SignedIn, SignedOut } from "@clerk/nextjs";
-import { ArrowRight, LayoutDashboard, MessageSquare, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, House, MessageSquare, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 
 import { ModeToggle } from "@/components/mode-toggle";
@@ -65,7 +65,7 @@ export default function Home() {
 
           {/* Subtitle */}
           <p
-            className="animate-fade-up text-muted-foreground mt-5 max-w-md text-center text-xs leading-relaxed tracking-tight md:text-sm"
+            className="animate-fade-up text-muted-foreground mt-5 max-w-md text-center text-base leading-relaxed tracking-tight md:text-base"
             style={{ animationDelay: "0.45s" }}
           >
             Zenthor Assist is your intelligent companion — always ready, always sharp, always
@@ -87,9 +87,9 @@ export default function Home() {
             </SignedOut>
             <SignedIn>
               <Button asChild size="lg" className="gap-2 px-5">
-                <Link href={"/dashboard" as "/"}>
-                  Go to dashboard
-                  <LayoutDashboard className="size-4" />
+                <Link href={"/home" as "/"}>
+                  Go to home
+                  <House className="size-4" />
                 </Link>
               </Button>
             </SignedIn>
@@ -109,8 +109,10 @@ export default function Home() {
               <MessageSquare className="size-4" />
             </div>
             <div>
-              <p className="text-foreground text-sm font-medium tracking-tight">Natural dialogue</p>
-              <p className="text-muted-foreground text-xs leading-relaxed tracking-tight">
+              <p className="text-foreground text-base font-medium tracking-tight">
+                Natural dialogue
+              </p>
+              <p className="text-muted-foreground text-base leading-relaxed tracking-tight">
                 Fluid conversations that feel genuinely helpful, not scripted.
               </p>
             </div>
@@ -120,8 +122,10 @@ export default function Home() {
               <Zap className="size-4" />
             </div>
             <div>
-              <p className="text-foreground text-sm font-medium tracking-tight">Instant answers</p>
-              <p className="text-muted-foreground text-xs leading-relaxed tracking-tight">
+              <p className="text-foreground text-base font-medium tracking-tight">
+                Instant answers
+              </p>
+              <p className="text-muted-foreground text-base leading-relaxed tracking-tight">
                 Powered by Claude with real-time web search and tools.
               </p>
             </div>
@@ -131,8 +135,10 @@ export default function Home() {
               <Sparkles className="size-4" />
             </div>
             <div>
-              <p className="text-foreground text-sm font-medium tracking-tight">Always improving</p>
-              <p className="text-muted-foreground text-xs leading-relaxed tracking-tight">
+              <p className="text-foreground text-base font-medium tracking-tight">
+                Always improving
+              </p>
+              <p className="text-muted-foreground text-base leading-relaxed tracking-tight">
                 Context-aware memory that gets sharper with every session.
               </p>
             </div>

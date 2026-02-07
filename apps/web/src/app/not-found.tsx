@@ -46,7 +46,7 @@ export default function NotFound() {
           </div>
 
           <p
-            className="animate-fade-up text-primary/80 text-xs font-semibold tracking-[0.35em] uppercase"
+            className="animate-fade-up text-primary/80 text-base font-semibold tracking-[0.35em] uppercase"
             style={{ animationDelay: "0.2s" }}
           >
             404
@@ -58,7 +58,7 @@ export default function NotFound() {
             Signal lost.
           </h1>
           <p
-            className="animate-fade-up text-muted-foreground mt-4 max-w-md text-sm leading-relaxed md:text-base"
+            className="animate-fade-up text-muted-foreground mt-4 max-w-md text-base leading-relaxed md:text-base"
             style={{ animationDelay: "0.4s" }}
           >
             That page isn&apos;t in the Zenthor network. Choose a waypoint below to get back on
@@ -87,12 +87,12 @@ export default function NotFound() {
 
       <footer className="animate-fade-up relative z-10 border-t px-6 py-6 md:px-10">
         <div className="mx-auto flex max-w-2xl flex-col items-start gap-3 text-left sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+          <div className="text-muted-foreground flex items-center gap-2 text-base">
             <Satellite className="text-primary size-4" />
             <span>Routing back to safe navigation.</span>
           </div>
-          <span className="text-muted-foreground text-xs">
-            Lost? Try the dashboard or start a new session.
+          <span className="text-muted-foreground text-base">
+            Lost? Try home or start a new session.
           </span>
         </div>
       </footer>

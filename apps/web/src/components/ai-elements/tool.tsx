@@ -62,7 +62,7 @@ const statusIcons: Record<ToolPart["state"], ReactNode> = {
 };
 
 export const getStatusBadge = (status: ToolPart["state"]) => (
-  <Badge className="gap-1.5 rounded-full text-xs" variant="secondary">
+  <Badge className="gap-1.5 rounded-full text-base" variant="secondary">
     {statusIcons[status]}
     {statusLabels[status]}
   </Badge>
@@ -85,7 +85,7 @@ export const ToolHeader = ({
     >
       <div className="flex items-center gap-2">
         <WrenchIcon className="text-muted-foreground size-4" />
-        <span className="text-sm font-medium">{title ?? derivedName}</span>
+        <span className="text-base font-medium">{title ?? derivedName}</span>
         {getStatusBadge(state)}
       </div>
       <ChevronDownIcon className="text-muted-foreground size-4 transition-transform group-data-[state=open]:rotate-180" />
@@ -111,7 +111,7 @@ export type ToolInputProps = ComponentProps<"div"> & {
 
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
   <div className={cn("space-y-2 overflow-hidden", className)} {...props}>
-    <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+    <h4 className="text-muted-foreground text-base font-medium tracking-wide uppercase">
       Parameters
     </h4>
     <div className="bg-muted/50 rounded-md">
@@ -140,12 +140,12 @@ export const ToolOutput = ({ className, output, errorText, ...props }: ToolOutpu
 
   return (
     <div className={cn("space-y-2", className)} {...props}>
-      <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+      <h4 className="text-muted-foreground text-base font-medium tracking-wide uppercase">
         {errorText ? "Error" : "Result"}
       </h4>
       <div
         className={cn(
-          "overflow-x-auto rounded-md text-xs [&_table]:w-full",
+          "overflow-x-auto rounded-md text-base [&_table]:w-full",
           errorText ? "bg-destructive/10 text-destructive" : "bg-muted/50 text-foreground",
         )}
       >

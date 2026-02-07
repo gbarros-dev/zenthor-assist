@@ -90,6 +90,17 @@
         "typescript": "catalog:",
       },
     },
+    "packages/agent-plugins": {
+      "name": "@zenthor-assist/agent-plugins",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@zenthor-assist/config": "workspace:*",
+        "typescript": "catalog:",
+      },
+    },
     "packages/config": {
       "name": "@zenthor-assist/config",
       "version": "0.0.0",
@@ -836,6 +847,8 @@
     "@whiskeysockets/eslint-config": ["@whiskeysockets/eslint-config@github:whiskeysockets/eslint-config#299e838", { "dependencies": { "@typescript-eslint/eslint-plugin": "^8.37.0", "@typescript-eslint/parser": "^8.37.0", "eslint-plugin-simple-import-sort": "^12.1.1" }, "peerDependencies": { "eslint": "^9.31.0", "typescript": ">=4" } }, "WhiskeySockets-eslint-config-299e838"],
 
     "@zenthor-assist/agent": ["@zenthor-assist/agent@workspace:apps/agent"],
+
+    "@zenthor-assist/agent-plugins": ["@zenthor-assist/agent-plugins@workspace:packages/agent-plugins"],
 
     "@zenthor-assist/backend": ["@zenthor-assist/backend@workspace:apps/backend"],
 

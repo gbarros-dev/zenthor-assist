@@ -37,6 +37,29 @@ export async function handleIncomingMessage(message: WAMessage) {
     channel: "whatsapp",
   });
 
+  // Check for pending tool approvals before normal message handling
+  const pendingApprovals = await client.query(api.toolApprovals.getPendingByConversation, {
+    conversationId,
+  });
+
+  if (pendingApprovals.length > 0) {
+    const normalized = text.trim().toUpperCase();
+    const approveWords = new Set(["YES", "Y", "APPROVE", "SIM"]);
+    const rejectWords = new Set(["NO", "N", "REJECT", "NAO", "NÃO"]);
+
+    if (approveWords.has(normalized) || rejectWords.has(normalized)) {
+      const status = approveWords.has(normalized) ? "approved" : "rejected";
+      await client.mutation(api.toolApprovals.resolve, {
+        approvalId: pendingApprovals[0]!._id,
+        status,
+      });
+      console.info(
+        `[whatsapp] Tool approval ${status} by ${phone} for approval ${pendingApprovals[0]!._id}`,
+      );
+      return;
+    }
+  }
+
   await client.mutation(api.messages.send, {
     conversationId,
     content: text,

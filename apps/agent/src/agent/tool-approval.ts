@@ -1,0 +1,117 @@
+import { api } from "@zenthor-assist/backend/convex/_generated/api";
+import type { Id } from "@zenthor-assist/backend/convex/_generated/dataModel";
+import type { Tool } from "ai";
+
+import { getConvexClient } from "../convex/client";
+import { sendWhatsAppMessage } from "../whatsapp/sender";
+
+const HIGH_RISK_TOOLS: Set<string> = new Set();
+
+const POLL_INTERVAL_MS = 1_000;
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1_000;
+
+export interface ApprovalContext {
+  jobId: string;
+  conversationId: string;
+  channel: "web" | "whatsapp";
+  phone?: string;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForApproval(
+  jobId: string,
+  approvalId: string,
+): Promise<"approved" | "rejected" | "timeout"> {
+  const client = getConvexClient();
+  const deadline = Date.now() + APPROVAL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const pending = await client.query(api.toolApprovals.getPendingByJob, {
+      jobId: jobId as Id<"agentQueue">,
+    });
+
+    const stillPending = pending.some((a) => a._id === approvalId);
+    if (!stillPending) {
+      const all = await client.query(api.toolApprovals.getByJob, {
+        jobId: jobId as Id<"agentQueue">,
+      });
+      const resolved = all.find((a) => a._id === approvalId);
+      if (resolved) {
+        return resolved.status as "approved" | "rejected";
+      }
+      return "rejected";
+    }
+
+    await sleep(POLL_INTERVAL_MS);
+  }
+
+  return "timeout";
+}
+
+export function wrapToolsWithApproval(
+  tools: Record<string, Tool>,
+  context: ApprovalContext,
+): Record<string, Tool> {
+  const wrapped: Record<string, Tool> = {};
+
+  for (const [name, t] of Object.entries(tools)) {
+    if (!HIGH_RISK_TOOLS.has(name)) {
+      wrapped[name] = t;
+      continue;
+    }
+
+    const original = t as Tool & { execute?: (...args: unknown[]) => unknown };
+    if (!original.execute) {
+      wrapped[name] = t;
+      continue;
+    }
+
+    const originalExecute = original.execute;
+
+    wrapped[name] = {
+      ...t,
+      execute: async (args: unknown, execOptions: unknown) => {
+        const client = getConvexClient();
+
+        console.info(`[tool-approval] Requesting approval for tool '${name}'`);
+
+        const approvalId = await client.mutation(api.toolApprovals.create, {
+          conversationId: context.conversationId as Id<"conversations">,
+          jobId: context.jobId as Id<"agentQueue">,
+          toolName: name,
+          toolInput: args,
+          channel: context.channel,
+        });
+
+        if (context.channel === "whatsapp" && context.phone) {
+          await sendWhatsAppMessage(
+            context.phone,
+            `🔐 I'd like to use the tool '${name}'. Reply YES to approve or NO to reject.`,
+          );
+        }
+
+        console.info(`[tool-approval] Waiting for approval on tool '${name}' (id: ${approvalId})`);
+
+        const result = await waitForApproval(context.jobId, approvalId as string);
+
+        if (result === "approved") {
+          console.info(`[tool-approval] Tool '${name}' approved, executing`);
+          return (originalExecute as Function).call(null, args, execOptions);
+        }
+
+        if (result === "timeout") {
+          console.info(`[tool-approval] Tool '${name}' approval timed out`);
+          return `Tool '${name}' approval timed out.`;
+        }
+
+        console.info(`[tool-approval] Tool '${name}' was rejected`);
+        return `Tool '${name}' was rejected by the user.`;
+      },
+    } as Tool;
+  }
+
+  return wrapped;
+}

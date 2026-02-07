@@ -128,9 +128,16 @@ export async function generateResponse(
         stopWhen: stepCountIs(10),
       });
 
-      const toolCalls = result.steps
-        .flatMap((step) => step.toolCalls)
-        .map((tc) => ({ name: tc.toolName, input: tc.input }));
+      const allToolCalls = result.steps.flatMap((step) => step.toolCalls);
+      const allToolResults = result.steps.flatMap((step) => step.toolResults);
+
+      const resultsByCallId = new Map(allToolResults.map((tr) => [tr.toolCallId, tr.output]));
+
+      const toolCalls = allToolCalls.map((tc) => ({
+        name: tc.toolName,
+        input: tc.input,
+        output: resultsByCallId.get(tc.toolCallId),
+      }));
 
       return {
         content: result.text,
@@ -195,9 +202,17 @@ export async function generateResponseStreaming(
 
       const steps = await streamResult.steps;
       const text = await streamResult.text;
-      const toolCalls = steps
-        .flatMap((step) => step.toolCalls)
-        .map((tc) => ({ name: tc.toolName, input: tc.input }));
+
+      const allToolCalls = steps.flatMap((step) => step.toolCalls);
+      const allToolResults = steps.flatMap((step) => step.toolResults);
+
+      const resultsByCallId = new Map(allToolResults.map((tr) => [tr.toolCallId, tr.output]));
+
+      const toolCalls = allToolCalls.map((tc) => ({
+        name: tc.toolName,
+        input: tc.input,
+        output: resultsByCallId.get(tc.toolCallId),
+      }));
 
       return {
         content: text,

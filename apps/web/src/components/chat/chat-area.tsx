@@ -20,7 +20,13 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
-import { Tool, ToolContent, ToolHeader, ToolInput } from "@/components/ai-elements/tool";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { logWebClientEvent } from "@/lib/observability/client";
@@ -192,10 +198,15 @@ export function ChatArea({ conversationId }: ChatAreaProps) {
                                   title={tc.name}
                                   type="dynamic-tool"
                                   toolName={tc.name}
-                                  state="output-available"
+                                  state={
+                                    tc.output !== undefined ? "output-available" : "input-available"
+                                  }
                                 />
                                 <ToolContent>
                                   <ToolInput input={tc.input} />
+                                  {tc.output !== undefined && (
+                                    <ToolOutput output={tc.output} errorText={undefined} />
+                                  )}
                                 </ToolContent>
                               </Tool>
                             ))}

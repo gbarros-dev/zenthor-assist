@@ -17,7 +17,7 @@ interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   _creationTime: number;
-  toolCalls?: { name: string; input: unknown }[];
+  toolCalls?: { name: string; input: unknown; output?: unknown }[];
   streaming?: boolean;
   position: MessagePosition;
 }
@@ -35,7 +35,7 @@ function computePositions(
     role: string;
     content: string;
     _creationTime: number;
-    toolCalls?: { name: string; input: unknown }[];
+    toolCalls?: { name: string; input: unknown; output?: unknown }[];
     streaming?: boolean;
   }[],
 ): ChatMessage[] {
@@ -90,7 +90,7 @@ export function useConvexMessages(conversationId: Id<"conversations">) {
         role: string;
         content: string;
         _creationTime: number;
-        toolCalls?: { name: string; input: unknown }[];
+        toolCalls?: { name: string; input: unknown; output?: unknown }[];
         streaming?: boolean;
       }[],
     );

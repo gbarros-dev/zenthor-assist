@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { requireConversationOwner } from "./lib/auth";
 
 const messageDoc = v.object({
   _id: v.id("messages"),
@@ -27,6 +28,13 @@ export const send = mutation({
   },
   returns: v.id("messages"),
   handler: async (ctx, args) => {
+    // Verify ownership when called by an authenticated user (web).
+    // Agent calls have no identity and bypass this check (secured at network level).
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity) {
+      await requireConversationOwner(ctx, args.conversationId);
+    }
+
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "user",
@@ -139,6 +147,7 @@ export const listByConversation = query({
   args: { conversationId: v.id("conversations") },
   returns: v.array(messageDoc),
   handler: async (ctx, args) => {
+    await requireConversationOwner(ctx, args.conversationId);
     return await ctx.db
       .query("messages")
       .withIndex("by_conversationId", (q) => q.eq("conversationId", args.conversationId))
@@ -150,6 +159,9 @@ export const get = query({
   args: { id: v.id("messages") },
   returns: v.union(messageDoc, v.null()),
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const msg = await ctx.db.get(args.id);
+    if (!msg) return null;
+    await requireConversationOwner(ctx, msg.conversationId);
+    return msg;
   },
 });

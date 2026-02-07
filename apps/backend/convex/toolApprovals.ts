@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 
 import { internalMutation, mutation, query } from "./_generated/server";
+import { requireConversationOwner } from "./lib/auth";
 
 /** Must match APPROVAL_TIMEOUT_MS in apps/agent/src/agent/tool-approval.ts */
 const APPROVAL_TTL_MS = 5 * 60 * 1_000;
@@ -50,6 +51,13 @@ export const resolve = mutation({
     const approval = await ctx.db.get(args.approvalId);
     if (!approval || approval.status !== "pending") return null;
 
+    // Verify ownership when called by an authenticated user (web).
+    // Agent calls have no identity and bypass this check (secured at network level).
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity) {
+      await requireConversationOwner(ctx, approval.conversationId);
+    }
+
     await ctx.db.patch(args.approvalId, {
       status: args.status,
       resolvedAt: Date.now(),
@@ -63,6 +71,13 @@ export const getPendingByConversation = query({
   args: { conversationId: v.id("conversations") },
   returns: v.array(toolApprovalDoc),
   handler: async (ctx, args) => {
+    // Verify ownership when called by an authenticated user (web).
+    // Agent calls have no identity and bypass this check (secured at network level).
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity) {
+      await requireConversationOwner(ctx, args.conversationId);
+    }
+
     return await ctx.db
       .query("toolApprovals")
       .withIndex("by_conversationId_status", (q) =>

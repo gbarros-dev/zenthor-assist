@@ -33,7 +33,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { ZenthorMark } from "@/components/zenthor-logo";
-import { useAppContext } from "@/hooks/use-app-context";
 
 import { NavUser } from "./nav-user";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -47,10 +46,9 @@ function getSidebarModeFromPath(pathname: string): SidebarMode {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const router = useRouter();
-  const { userId } = useAppContext();
   const [mode, setMode] = useState<SidebarMode>(() => getSidebarModeFromPath(pathname));
 
-  const conversations = useQuery(api.conversations.listRecentWithLastMessage, { userId });
+  const conversations = useQuery(api.conversations.listRecentWithLastMessage, {});
   const createConversation = useMutation(api.conversations.create);
   const archiveConversation = useMutation(api.conversations.archive);
 
@@ -60,7 +58,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   async function handleNewChat() {
     try {
-      const id = await createConversation({ userId });
+      const id = await createConversation({});
       router.push(`/chat/${id}`);
     } catch {
       toast.error("Failed to create conversation");

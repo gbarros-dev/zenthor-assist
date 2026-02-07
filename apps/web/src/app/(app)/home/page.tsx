@@ -8,7 +8,6 @@ import Link from "next/link";
 import Loader from "@/components/loader";
 import { PageWrapper } from "@/components/page-wrapper";
 import { Button } from "@/components/ui/button";
-import { useAppContext } from "@/hooks/use-app-context";
 
 function formatRelativeTime(timestamp: number) {
   const diff = Date.now() - timestamp;
@@ -23,8 +22,7 @@ function formatRelativeTime(timestamp: number) {
 }
 
 export default function HomePage() {
-  const { userId } = useAppContext();
-  const conversations = useQuery(api.conversations.listRecentWithLastMessage, { userId });
+  const conversations = useQuery(api.conversations.listRecentWithLastMessage, {});
 
   if (conversations === undefined) {
     return (

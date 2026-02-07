@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { requireConversationOwner, requireUser } from "./lib/auth";
 
 const conversationDoc = v.object({
   _id: v.id("conversations"),
@@ -63,12 +64,13 @@ export const getOrCreate = mutation({
 });
 
 export const listByUser = query({
-  args: { userId: v.id("users") },
+  args: {},
   returns: v.array(conversationDoc),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
     return await ctx.db
       .query("conversations")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
   },
 });
@@ -88,19 +90,27 @@ export const get = query({
   args: { id: v.id("conversations") },
   returns: v.union(conversationDoc, v.null()),
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const user = await requireUser(ctx);
+    const conversation = await ctx.db.get(args.id);
+    if (!conversation) return null;
+    if (conversation.userId === user._id) return conversation;
+    if (conversation.contactId) {
+      const contact = await ctx.db.get(conversation.contactId);
+      if (contact?.userId === user._id) return conversation;
+    }
+    return null;
   },
 });
 
 export const create = mutation({
   args: {
-    userId: v.id("users"),
     title: v.optional(v.string()),
   },
   returns: v.id("conversations"),
   handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
     return await ctx.db.insert("conversations", {
-      userId: args.userId,
+      userId: user._id,
       channel: "web",
       status: "active",
       title: args.title ?? "New chat",
@@ -112,8 +122,7 @@ export const archive = mutation({
   args: { id: v.id("conversations") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const conv = await ctx.db.get(args.id);
-    if (!conv) throw new ConvexError("Conversation not found");
+    const conv = await requireConversationOwner(ctx, args.id);
     if (conv.channel === "whatsapp") throw new ConvexError("Cannot archive WhatsApp conversations");
     await ctx.db.patch(args.id, { status: "archived" });
   },
@@ -126,12 +135,13 @@ export const updateTitle = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await requireConversationOwner(ctx, args.id);
     await ctx.db.patch(args.id, { title: args.title });
   },
 });
 
 export const listRecentWithLastMessage = query({
-  args: { userId: v.id("users") },
+  args: {},
   returns: v.array(
     v.object({
       _id: v.id("conversations"),
@@ -152,18 +162,20 @@ export const listRecentWithLastMessage = query({
       ),
     }),
   ),
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+
     // 1. Web conversations by userId
     const webConversations = await ctx.db
       .query("conversations")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .filter((q) => q.eq(q.field("status"), "active"))
       .collect();
 
     // 2. WhatsApp conversations via linked contacts
     const linkedContacts = await ctx.db
       .query("contacts")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
     const whatsappConversations = (

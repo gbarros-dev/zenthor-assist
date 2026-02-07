@@ -7,15 +7,13 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useAppContext } from "@/hooks/use-app-context";
 
 export default function ChatPage() {
-  const { userId } = useAppContext();
   const createConversation = useMutation(api.conversations.create);
   const router = useRouter();
 
   async function handleNewChat() {
-    const id = await createConversation({ userId });
+    const id = await createConversation({});
     router.push(`/chat/${id}`);
   }
 

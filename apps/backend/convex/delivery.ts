@@ -10,6 +10,13 @@ const outboundStatus = v.union(
   v.literal("failed"),
 );
 
+const outboundMetadataValidator = v.optional(
+  v.object({
+    kind: v.string(),
+    toolName: v.optional(v.string()),
+  }),
+);
+
 const outboundDoc = v.object({
   _id: v.id("outboundMessages"),
   _creationTime: v.number(),
@@ -20,7 +27,7 @@ const outboundDoc = v.object({
   to: v.optional(v.string()),
   payload: v.object({
     content: v.string(),
-    metadata: v.optional(v.any()),
+    metadata: outboundMetadataValidator,
   }),
   status: outboundStatus,
   processorId: v.optional(v.string()),
@@ -40,7 +47,7 @@ export const enqueueOutbound = mutation({
     messageId: v.id("messages"),
     to: v.optional(v.string()),
     content: v.string(),
-    metadata: v.optional(v.any()),
+    metadata: outboundMetadataValidator,
   },
   returns: v.union(v.id("outboundMessages"), v.null()),
   handler: async (ctx, args) => {

@@ -53,7 +53,15 @@ export default defineSchema({
     role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
     content: v.string(),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
-    toolCalls: v.optional(v.any()),
+    toolCalls: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          input: v.any(),
+          output: v.optional(v.any()),
+        }),
+      ),
+    ),
     streaming: v.optional(v.boolean()),
     status: v.union(
       v.literal("pending"),
@@ -163,7 +171,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     cronExpression: v.optional(v.string()),
     intervalMs: v.optional(v.number()),
-    payload: v.any(),
+    payload: v.string(),
     enabled: v.boolean(),
     lastRunAt: v.optional(v.number()),
     nextRunAt: v.optional(v.number()),
@@ -194,7 +202,12 @@ export default defineSchema({
     to: v.optional(v.string()),
     payload: v.object({
       content: v.string(),
-      metadata: v.optional(v.any()),
+      metadata: v.optional(
+        v.object({
+          kind: v.string(),
+          toolName: v.optional(v.string()),
+        }),
+      ),
     }),
     status: v.union(
       v.literal("pending"),

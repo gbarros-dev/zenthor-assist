@@ -3,6 +3,16 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getConversationIfOwner, isValidServiceKey } from "./lib/auth";
 
+const toolCallValidator = v.optional(
+  v.array(
+    v.object({
+      name: v.string(),
+      input: v.any(),
+      output: v.optional(v.any()),
+    }),
+  ),
+);
+
 const messageDoc = v.object({
   _id: v.id("messages"),
   _creationTime: v.number(),
@@ -10,7 +20,7 @@ const messageDoc = v.object({
   role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
   content: v.string(),
   channel: v.union(v.literal("whatsapp"), v.literal("web")),
-  toolCalls: v.optional(v.any()),
+  toolCalls: toolCallValidator,
   streaming: v.optional(v.boolean()),
   status: v.union(
     v.literal("pending"),
@@ -66,7 +76,7 @@ export const addAssistantMessage = mutation({
     conversationId: v.id("conversations"),
     content: v.string(),
     channel: v.union(v.literal("whatsapp"), v.literal("web")),
-    toolCalls: v.optional(v.any()),
+    toolCalls: toolCallValidator,
   },
   returns: v.union(v.id("messages"), v.null()),
   handler: async (ctx, args) => {
@@ -140,7 +150,7 @@ export const finalizeMessage = mutation({
     serviceKey: v.optional(v.string()),
     messageId: v.id("messages"),
     content: v.string(),
-    toolCalls: v.optional(v.any()),
+    toolCalls: toolCallValidator,
   },
   returns: v.null(),
   handler: async (ctx, args) => {

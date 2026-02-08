@@ -22,20 +22,34 @@ interface SkillData {
 }
 
 export default function SkillsPage() {
-  const skills = useQuery(api.skills.list);
+  const me = useQuery(api.users.me);
+  const isAdmin = me?.role === "admin";
+  const skills = useQuery(api.skills.list, isAdmin ? {} : "skip");
   const toggleSkill = useMutation(api.skills.toggle);
   const removeSkill = useMutation(api.skills.remove);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<SkillData | undefined>();
 
-  if (skills === undefined) {
+  if (me === undefined || (isAdmin && skills === undefined)) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Loader />
       </div>
     );
   }
+
+  if (!isAdmin) {
+    return (
+      <PageWrapper title="Skills">
+        <div className="text-muted-foreground rounded-xl border p-6">
+          You do not have permission to manage skills.
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  const adminSkills = skills ?? [];
 
   function handleEdit(skill: SkillData) {
     setEditingSkill(skill);
@@ -58,7 +72,7 @@ export default function SkillsPage() {
       }
     >
       <div className="flex flex-col gap-4">
-        {skills.length === 0 ? (
+        {adminSkills.length === 0 ? (
           <div className="bg-muted/50 flex flex-col items-center justify-center gap-2 rounded-xl py-12">
             <Sparkles className="text-muted-foreground size-8" />
             <p className="text-muted-foreground text-base">No skills configured yet</p>
@@ -68,7 +82,7 @@ export default function SkillsPage() {
           </div>
         ) : (
           <div className="divide-border divide-y rounded-xl border">
-            {skills.map((skill) => (
+            {adminSkills.map((skill) => (
               <div key={skill._id} className="flex items-start gap-4 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-base font-medium">{skill.name}</p>

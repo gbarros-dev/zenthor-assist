@@ -1,5 +1,6 @@
 import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import type { Id } from "@zenthor-assist/backend/convex/_generated/dataModel";
+import { env } from "@zenthor-assist/env/agent";
 import type { Tool } from "ai";
 import type { ConvexClient } from "convex/browser";
 
@@ -63,6 +64,7 @@ export async function syncDiagnostics(
   await Promise.all(
     results.map(async (result) => {
       await client.mutation(api.plugins.upsertDiagnostics, {
+        serviceKey: env.AGENT_SECRET,
         name: result.pluginName,
         diagnosticStatus: result.status,
         diagnosticMessages: result.diagnostics,
@@ -76,6 +78,7 @@ export async function syncBuiltinPluginDefinitions(client: ConvexClient): Promis
   await Promise.all(
     plugins.map(async (plugin) => {
       await client.mutation(api.plugins.upsertDefinition, {
+        serviceKey: env.AGENT_SECRET,
         name: plugin.name,
         version: plugin.version,
         source: plugin.source,
@@ -95,11 +98,13 @@ export async function resolvePluginTools(params: {
   const { client, channel, agentId, modelName } = params;
   const [installs, policy] = await Promise.all([
     client.query(api.plugins.getEffectiveInstallSet, {
+      serviceKey: env.AGENT_SECRET,
       workspaceScope: "default",
       agentId,
       channel,
     }),
     client.query(api.plugins.getEffectivePolicy, {
+      serviceKey: env.AGENT_SECRET,
       workspaceScope: "default",
       agentId,
       channel,

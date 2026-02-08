@@ -1,5 +1,6 @@
 import { api } from "@zenthor-assist/backend/convex/_generated/api";
 import type { Id } from "@zenthor-assist/backend/convex/_generated/dataModel";
+import { env } from "@zenthor-assist/env/agent";
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -22,7 +23,8 @@ export function createScheduleTask(conversationId: Id<"conversations">) {
     inputSchema: scheduleTaskInputSchema,
     execute: async ({ name, description, intervalMinutes, payload }) => {
       const client = getConvexClient();
-      await client.mutation(api.scheduledTasks.create, {
+      const taskId = await client.mutation(api.scheduledTasks.create, {
+        serviceKey: env.AGENT_SECRET,
         name,
         description,
         intervalMs: intervalMinutes * 60 * 1000,
@@ -30,6 +32,7 @@ export function createScheduleTask(conversationId: Id<"conversations">) {
         enabled: true,
         conversationId,
       });
+      if (!taskId) return "Failed to create scheduled task — unauthorized.";
       return `Scheduled task "${name}" created. It will run every ${intervalMinutes} minutes.`;
     },
   });
@@ -41,13 +44,15 @@ export const scheduleTask = tool({
   inputSchema: scheduleTaskInputSchema,
   execute: async ({ name, description, intervalMinutes, payload }) => {
     const client = getConvexClient();
-    await client.mutation(api.scheduledTasks.create, {
+    const taskId = await client.mutation(api.scheduledTasks.create, {
+      serviceKey: env.AGENT_SECRET,
       name,
       description,
       intervalMs: intervalMinutes * 60 * 1000,
       payload,
       enabled: true,
     });
+    if (!taskId) return "Failed to create scheduled task — unauthorized.";
     return `Scheduled task "${name}" created. It will run every ${intervalMinutes} minutes.`;
   },
 });

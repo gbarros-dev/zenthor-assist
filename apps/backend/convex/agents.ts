@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { getAuthUser } from "./lib/auth";
 
 const toolPolicyValidator = v.optional(
   v.object({
@@ -25,6 +26,8 @@ export const list = query({
   args: {},
   returns: v.array(agentDoc),
   handler: async (ctx) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return [];
     return await ctx.db.query("agents").collect();
   },
 });
@@ -33,6 +36,8 @@ export const get = query({
   args: { id: v.id("agents") },
   returns: v.union(agentDoc, v.null()),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     return await ctx.db.get(args.id);
   },
 });
@@ -41,6 +46,8 @@ export const getDefault = query({
   args: {},
   returns: v.union(agentDoc, v.null()),
   handler: async (ctx) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     return await ctx.db
       .query("agents")
       .withIndex("by_enabled", (q) => q.eq("enabled", true))
@@ -52,6 +59,8 @@ export const getByName = query({
   args: { name: v.string() },
   returns: v.union(agentDoc, v.null()),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     return await ctx.db
       .query("agents")
       .withIndex("by_name", (q) => q.eq("name", args.name))
@@ -69,8 +78,10 @@ export const create = mutation({
     enabled: v.boolean(),
     toolPolicy: toolPolicyValidator,
   },
-  returns: v.id("agents"),
+  returns: v.union(v.id("agents"), v.null()),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     return await ctx.db.insert("agents", args);
   },
 });
@@ -88,6 +99,8 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     const { id, ...fields } = args;
     await ctx.db.patch(id, fields);
   },
@@ -97,6 +110,8 @@ export const remove = mutation({
   args: { id: v.id("agents") },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     await ctx.db.delete(args.id);
   },
 });

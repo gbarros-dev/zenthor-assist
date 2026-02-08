@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { getAuthUser } from "./lib/auth";
 
 const skillConfigValidator = v.optional(
   v.object({
@@ -27,6 +28,8 @@ export const list = query({
   args: {},
   returns: v.array(skillDoc),
   handler: async (ctx) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return [];
     return await ctx.db.query("skills").collect();
   },
 });
@@ -35,6 +38,8 @@ export const getByName = query({
   args: { name: v.string() },
   returns: v.union(skillDoc, v.null()),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     return await ctx.db
       .query("skills")
       .withIndex("by_name", (q) => q.eq("name", args.name))
@@ -49,8 +54,10 @@ export const create = mutation({
     enabled: v.boolean(),
     config: skillConfigValidator,
   },
-  returns: v.id("skills"),
+  returns: v.union(v.id("skills"), v.null()),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     return await ctx.db.insert("skills", args);
   },
 });
@@ -59,6 +66,8 @@ export const toggle = mutation({
   args: { id: v.id("skills") },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     const skill = await ctx.db.get(args.id);
     if (!skill) return;
     await ctx.db.patch(args.id, { enabled: !skill.enabled });
@@ -75,6 +84,8 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     const { id, ...fields } = args;
     await ctx.db.patch(id, fields);
   },
@@ -84,6 +95,8 @@ export const remove = mutation({
   args: { id: v.id("skills") },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return null;
     await ctx.db.delete(args.id);
   },
 });

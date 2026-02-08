@@ -1,7 +1,10 @@
+import { ConvexError } from "convex/values";
+
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 type Ctx = QueryCtx | MutationCtx;
+type DbCtx = Pick<Ctx, "db">;
 
 /**
  * Check whether the caller provided a valid agent service key.
@@ -14,8 +17,16 @@ type Ctx = QueryCtx | MutationCtx;
  */
 export function isValidServiceKey(serviceKey?: string): boolean {
   const expected = process.env.AGENT_SECRET;
-  if (!expected) return true;
+  if (!expected) {
+    return process.env.NODE_ENV !== "production";
+  }
   return !!serviceKey && serviceKey === expected;
+}
+
+export function assertValidServiceKey(serviceKey?: string): void {
+  if (!isValidServiceKey(serviceKey)) {
+    throw new ConvexError("Forbidden");
+  }
 }
 
 /**
@@ -51,6 +62,26 @@ export async function getConversationIfOwner(
   if (conversation.contactId) {
     const contact = await ctx.db.get(conversation.contactId);
     if (contact && contact.userId === user._id) return conversation;
+  }
+  return null;
+}
+
+/**
+ * Returns the conversation if the provided user owns it.
+ * Ownership is satisfied by either direct web ownership (`userId`) or linked
+ * WhatsApp ownership (`contact.userId`).
+ */
+export async function getConversationIfOwnedByUser(
+  ctx: DbCtx,
+  userId: Id<"users">,
+  conversationId: Id<"conversations">,
+): Promise<Doc<"conversations"> | null> {
+  const conversation = await ctx.db.get(conversationId);
+  if (!conversation) return null;
+  if (conversation.userId && conversation.userId === userId) return conversation;
+  if (conversation.contactId) {
+    const contact = await ctx.db.get(conversation.contactId);
+    if (contact && contact.userId === userId) return conversation;
   }
   return null;
 }
